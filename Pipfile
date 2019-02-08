@@ -10,6 +10,7 @@ pytz = "*"
 [dev-packages]
 nose = "*"
 freezegun = "*"
+pycodestyle = "*"
 
 [requires]
 python_version = "3.7"
