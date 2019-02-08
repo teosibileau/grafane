@@ -1,0 +1,61 @@
+image: registry.gitlab.com/drkloc/dind-compose:latest
+
+variables:
+  COMPOSE_HTTP_TIMEOUT: "200"
+  CONTAINER_TEST_IMAGE: registry.gitlab.com/drkloc/grafane:$CI_BUILD_REF_NAME
+  CONTAINER_RELEASE_IMAGE: registry.gitlab.com/drkloc/grafane:latest
+
+services:
+  - docker:dind
+
+stages:
+  - build
+  - check
+  - test
+  - release
+
+before_script:
+  - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.gitlab.com
+
+build-branch:
+  stage: build
+  script:
+    - docker build --build-arg ENV=DEV -t $CONTAINER_TEST_IMAGE .
+    - docker push $CONTAINER_TEST_IMAGE
+  except:
+    - master
+    - tags
+
+build-releases:
+  stage: build
+  script:
+    - docker build -t $CONTAINER_TEST_IMAGE .
+    - docker push $CONTAINER_TEST_IMAGE
+  only:
+    - master
+    - tags
+
+check:
+  stage: check
+  script:
+    - docker run -i $CONTAINER_TEST_IMAGE bash -c "pycodestyle grafane"
+
+test:
+  stage: test
+  script:
+    - docker pull $CONTAINER_TEST_IMAGE
+    - docker-compose -f docker-compose.yml -f docker-compose.ci.yml up -d
+    - docker-compose -f docker-compose.yml -f docker-compose.ci.yml ps
+    - docker-compose -f docker-compose.yml -f docker-compose.ci.yml run grafane bash -c "cd grafane && nosetests"
+  except:
+    - master
+    - tags
+
+release-image:
+  stage: release
+  script:
+    - docker pull $CONTAINER_TEST_IMAGE
+    - docker tag $CONTAINER_TEST_IMAGE $CONTAINER_RELEASE_IMAGE
+    - docker push $CONTAINER_RELEASE_IMAGE
+  only:
+    - master
