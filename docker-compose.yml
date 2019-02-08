@@ -1,0 +1,21 @@
+version: '2'
+services:
+  metrics:
+    image: influxdb:latest
+    environment:
+      INFLUXDB_DATA_ENGINE: tsm1
+      INFLUXDB_DB: metrics
+      INFLUXDB_USER: admin
+      INFLUXDB_USER_PASSWORD: admin123
+
+  grafane:
+    build:
+      context: .
+    depends_on:
+      - "metrics"
+    environment:
+      INFLUXDB_HOST: metrics
+      INFLUXDB_PORT: 8086
+      INFLUXDB_DB: metrics
+      INFLUXDB_USER: admin
+      INFLUXDB_USER_PASSWORD: admin123

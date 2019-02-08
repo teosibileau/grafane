@@ -1,4 +1,4 @@
-# Grafano
+# Grafane
 
-An influx db client inspired in grafana's query builder
+An influxdb client inspired in grafana's query builder
 
