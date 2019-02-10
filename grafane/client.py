@@ -67,7 +67,7 @@ class Grafane(InfluxDBClient):
         else:
             self.fields = ['%s' % f for f in self.fields]
         self.sql = 'SELECT %s FROM "%s"' % (
-            ' '.join(self.fields),
+            ', '.join(self.fields),
             self.metric
         )
         if len(self.filter):

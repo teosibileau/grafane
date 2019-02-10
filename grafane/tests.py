@@ -14,6 +14,7 @@ class BaseInfluxDBTestCase:
             {
                 'fields': {
                     'value': 1.2,
+                    'value2': 1.3,
                 },
                 'tags': {
                     'tag1': 'value1',
@@ -23,6 +24,7 @@ class BaseInfluxDBTestCase:
             {
                 'fields': {
                     'value': 1.86,
+                    'value2': 2.3,
                 },
                 'tags': {
                     'tag1': 'value2',
@@ -32,6 +34,7 @@ class BaseInfluxDBTestCase:
             {
                 'fields': {
                     'value': 1.4,
+                    'value2': 1.1,
                 },
                 'tags': {
                     'tag1': 'value3',
@@ -41,6 +44,7 @@ class BaseInfluxDBTestCase:
             {
                 'fields': {
                     'value': 1.8,
+                    'value2': 1.95,
                 },
                 'tags': {
                     'tag1': 'value1',
@@ -65,6 +69,23 @@ class GrafaneTestCase(BaseInfluxDBTestCase, unittest.TestCase):
             self.assertEqual(
                 results[i]['value'],
                 points[i]['fields']['value']
+            )
+        self.tearDown()
+
+    def test_select_multiple(self):
+        points = self.points
+        self.client.report_points(points)
+        self.client.select(fields=['value', 'value2'])
+        results = self.client.execute_query()
+        self.assertEqual(len(results), len(points))
+        for i in range(len(results)):
+            self.assertEqual(
+                results[i]['value'],
+                points[i]['fields']['value']
+            )
+            self.assertEqual(
+                results[i]['value2'],
+                points[i]['fields']['value2']
             )
         self.tearDown()
 
