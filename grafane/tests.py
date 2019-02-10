@@ -89,6 +89,24 @@ class GrafaneTestCase(BaseInfluxDBTestCase, unittest.TestCase):
             )
         self.tearDown()
 
+    def test_select_multiple_with_sum_count(self):
+        points = self.points
+        self.client.report_points(points)
+        self.client.select(['value', 'value2'], ['sum', 'count'])
+        results = self.client.execute_query()
+        self.assertEqual(len(results), 1)
+        self.assertTrue('sum' in results[0])
+        self.assertEqual(
+            round(Decimal(results[0]['sum']), 2),
+            round(Decimal(sum([p['fields']['value'] for p in points])), 2)
+        )
+        self.assertTrue('count' in results[0])
+        self.assertEqual(
+            results[0]['count'],
+            len(points)
+        )
+        self.tearDown()
+
     def test_select_with_sum(self):
         points = self.points
         self.client.report_points(points)
