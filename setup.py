@@ -16,7 +16,7 @@ requirements = [str(r.req) for r in
 
 setup(
     name='Grafane',
-    version='0.5',
+    version='0.6',
     packages=['grafane'],
     author=u'Teofilo Sibileau',
     author_email='teo.sibileau@gmail.com',
