@@ -39,6 +39,9 @@ check:
   stage: check
   script:
     - docker run -i $CONTAINER_TEST_IMAGE bash -c "pycodestyle grafane"
+  except:
+    - master
+    - tags
 
 test:
   stage: test
