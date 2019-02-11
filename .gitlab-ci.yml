@@ -46,6 +46,7 @@ test:
     - docker pull $CONTAINER_TEST_IMAGE
     - docker-compose -f docker-compose.yml -f docker-compose.ci.yml up -d
     - docker-compose -f docker-compose.yml -f docker-compose.ci.yml ps
+    - sleep 30
     - docker-compose -f docker-compose.yml -f docker-compose.ci.yml run grafane bash -c "cd grafane && nosetests"
   except:
     - master
