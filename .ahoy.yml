@@ -22,8 +22,3 @@ commands:
     cmd: |
       export COMPOSE_FLAGS="-f docker-compose.dashboards.yml $COMPOSE_FLAGS"
       ahoy $@
-
-  build-grafane:
-    usage: builds grafane container
-    cmd: |
-      docker-compose -f docker-compose.yml -f docker-compose.dev.yml  -p grafane build --build-arg ENV=DEV grafane
