@@ -16,5 +16,6 @@ setup(
     author_email='teo.sibileau@gmail.com',
     license='Creative Commons Attribution-Noncommercial-Share Alike license',
     long_description=open('README.md').read(),
+    long_description_content_type='text/markdown',
     install_requires=requirements,
 )
