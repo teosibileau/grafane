@@ -1,0 +1,6 @@
+version: '2'
+services:
+  grafane:
+    image: "${CONTAINER_TEST_IMAGE}"
+    environment:
+      TESTING: 'true'
