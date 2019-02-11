@@ -1,6 +1,6 @@
 # Grafane
 
-A very opionated influxdb client inspired in grafana's query builder.
+A very opinionated influxdb client that uses the [official python client](https://github.com/influxdata/influxdb-python) and is very much inspired in grafana's query builder.
 
 ## Setup
 
