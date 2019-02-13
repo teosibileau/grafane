@@ -207,3 +207,47 @@ Out[36]:
   'sum': 1.4,
   'mean': 1.1}]  
 ```
+
+### Filter values by time range
+
+```python
+In [6]: for i in range(len(points)): 
+   ...:     points[i]['time'] = datetime.now() - timedelta(hours=i+1) 
+In [7]: c.report_points(points)
+```
+
+```python
+In [14]: time_range = (datetime(2019, 2, 13, 9, 29, 39, 993719), datetime(2019, 2, 13, 6, 29, 39, 993908))
+
+In [15]: c.select(fields=['value', 'value2'])
+
+In [16]: c.filter_time_range(time_range)
+
+In [17]: c.execute_query()
+Out[17]: [{'time': '2019-02-13T09:29:39.99371904Z', 'value': 1.2, 'value2': 1.3}]
+```
+
+`filter_time_range` argument could be either a tuple or a list of datetime objects. Order doesn't matter.
+
+### Filter value in
+
+Match up tags agains multiple values:
+
+```python
+In [28]: c.select(fields=['value', 'value2'], aggregation='sum')
+
+In [29]: c.filter_value_in('tag1', ['value1', 'value2'])
+
+In [30]: c.group_by('tag1')
+
+In [31]: c.execute_query()
+Out[31]:
+[{'tags': {'tag1': 'value1'},
+  'time': '1970-01-01T00:00:00Z',
+  'sum': 15,
+  'sum_1': 16.25},
+ {'tags': {'tag1': 'value2'},
+  'time': '1970-01-01T00:00:00Z',
+  'sum': 9.3,
+  'sum_1': 11.5}]
+```
