@@ -1,5 +1,6 @@
 import time
 import pytz
+import copy
 from datetime import datetime
 from .settings import INFLUXDB_SETTINGS, TESTING
 from influxdb import InfluxDBClient
@@ -142,6 +143,7 @@ class Grafane(InfluxDBClient):
             raise WrongArgumentType(
                 'Time range should be provided as a list or a tuple'
             )
+        r = copy.deepcopy(list(r))
         if len(r) == 2:
             if r[0] > r[1]:
                 f, t = r[1], r[0]
@@ -225,6 +227,7 @@ class Grafane(InfluxDBClient):
         return self.report_points([d])
 
     def report_points(self, points=[]):
+        points = copy.deepcopy(points)
         for i in range(len(points)):
             p = points[i]
             if 'time' not in p:
