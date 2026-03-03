@@ -2,23 +2,6 @@ ahoyapi: v2
 usage: CLI app for development using ahoy.
 commands:
   docker:
-    usage: A series of docker commands (experimental)
-    imports:
-      - .ahoy/docker.ahoy.yml
-
-  pipenv:
-    usage: Commands to interact with pipenv
-    imports:
-      - .ahoy/pipenv.ahoy.yml
-
-  dev:
-    usage: Prefix for docker command. Opens ports on service containers.
+    usage: Docker commands
     cmd: |
-      export COMPOSE_FLAGS="-f docker-compose.dev.yml $COMPOSE_FLAGS"
-      ahoy $@
-
-  dashboards:
-    usage: Prefix for docker command. Adds grafana containers to formation.
-    cmd: |
-      export COMPOSE_FLAGS="-f docker-compose.dashboards.yml $COMPOSE_FLAGS"
-      ahoy $@
+      docker-compose $@

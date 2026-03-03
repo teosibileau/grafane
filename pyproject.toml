@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "grafane"
+version = "0.6"
+description = "Opinionated InfluxDB client"
+authors = ["Teofilo Sibileau <teo.sibileau@gmail.com>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.9"
+influxdb = "5.2.1"
+pytz = "*"
+
+[tool.poetry.group.dev.dependencies]
+nose = "*"
+freezegun = "*"
+pycodestyle = "*"
+ipython = "*"
+
+[tool.poetry.scripts]
+grafane = "grafane.client:Grafane"

@@ -1,32 +1,16 @@
-FROM python:3.6-jessie
+FROM python:3.9
 
-# Update packages and install software
-RUN apt-get update \
-    && apt-get -y install git \
-                          python3-dev \
-                          python3-pip \
-                          libfontconfig \
-                          libssl-dev \
-                          build-essential \
-                          libffi-dev \
-                          software-properties-common
+RUN apt-get update && apt-get -y install git libfontconfig libssl-dev build-essential libffi-dev
 
-RUN pip3 install --upgrade pip
+RUN pip install poetry
 
-ARG ENV=PROD
 ENV DATA_FOLDER=/data
 
-RUN echo "Building image for $ENV environment"
-
-RUN mkdir -p /data
-RUN chmod -R +r /data
+RUN mkdir -p /data && chmod -R +r /data
 
 WORKDIR /code
-ADD requirements.txt /code
-ADD requirements.dev.txt /code
-ADD .docker/install_dev_requirements.sh /code
+COPY pyproject.toml README.md ./
 
-RUN pip3 install -r requirements.txt
-RUN chmod +x install_dev_requirements.sh && ./install_dev_requirements.sh
+RUN poetry install
 
-ADD ./ /code
+COPY ./ .

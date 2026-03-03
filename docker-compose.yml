@@ -1,4 +1,4 @@
-version: '2'
+---
 services:
   metrics:
     image: influxdb:1.8.10

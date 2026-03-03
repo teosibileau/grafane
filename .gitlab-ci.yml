@@ -15,7 +15,7 @@ test:
     INFLUXDB_USER: admin
     INFLUXDB_USER_PASSWORD: admin123
   before_script:
-    - pip install -r requirements.txt
+    - pip install poetry
+    - poetry install
   script:
-    - pip install nose freezegun
-    - nosetests grafane
+    - poetry run nosetests grafane
