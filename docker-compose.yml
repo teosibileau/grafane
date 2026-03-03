@@ -21,6 +21,7 @@ services:
   grafane:
     build:
       context: .
+      dockerfile: .docker/Dockerfile
     depends_on:
       - "metrics"
     environment:
