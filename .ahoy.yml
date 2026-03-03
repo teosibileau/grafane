@@ -1,7 +1,7 @@
 ahoyapi: v2
-usage: CLI app for development using ahoy.
+usage: Smart Home cli tools.
 commands:
   docker:
-    usage: Docker commands
-    cmd: |
-      docker-compose $@
+    usage: A series of docker commands (experimental)
+    imports:
+      - .ahoy/docker.ahoy.yml
