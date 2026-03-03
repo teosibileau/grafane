@@ -44,3 +44,5 @@ storage
 ##########
 src/
 src/*
+
+.gitlab-ci-local

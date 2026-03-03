@@ -1,5 +1,4 @@
 FROM python:3.6-jessie
-MAINTAINER Teo Sibileau
 
 # Update packages and install software
 RUN apt-get update \
