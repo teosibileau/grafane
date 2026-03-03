@@ -17,6 +17,7 @@ pycodestyle = "*"
 ipython = "*"
 pytest = "^9.0.2"
 pytest-freezegun = "^0.4.2"
+setuptools = "*"
 
 [tool.poetry.scripts]
 grafane = "grafane.client:Grafane"
