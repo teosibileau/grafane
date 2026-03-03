@@ -1,7 +1,7 @@
 version: '2'
 services:
   metrics:
-    image: influxdb:latest
+    image: influxdb:1.8.10
     environment:
       INFLUXDB_DATA_ENGINE: tsm1
       INFLUXDB_DB: metrics
