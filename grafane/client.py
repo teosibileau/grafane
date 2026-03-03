@@ -21,28 +21,26 @@ class WrongArgumentType(Exception):
 class Grafane(InfluxDBClient):
     def __init__(self, metric="generic"):
         self.ignore_query = False
-        if INFLUXDB_SETTINGS.get("uuid", False):
-            self.uuid = INFLUXDB_SETTINGS.get("uuid", False)
-            if self.uuid:
-                super(Grafane, self).__init__(
-                    host=INFLUXDB_SETTINGS["db_host"],
-                    port=INFLUXDB_SETTINGS["db_port"],
-                    username=INFLUXDB_SETTINGS["db_user"],
-                    password=INFLUXDB_SETTINGS["db_pass"],
-                    database=INFLUXDB_SETTINGS["db_name"],
-                    ssl=False,
-                )
-            else:
-                raise MissingInfluxDBSettings(
-                    "missing uuid in INFLUXDB_SETTINGS", ["missing uuid"]
-                )
-        else:
+
+        uuid = INFLUXDB_SETTINGS.get("uuid", False)
+        if not uuid:
             raise MissingInfluxDBSettings(
-                "please set INFLUXDB_SETTINGS", ["missing settings dict"]
+                "missing uuid in INFLUXDB_SETTINGS", ["missing uuid"]
             )
+
+        self.uuid = uuid
+        super(Grafane, self).__init__(
+            host=INFLUXDB_SETTINGS["db_host"],
+            port=INFLUXDB_SETTINGS["db_port"],
+            username=INFLUXDB_SETTINGS["db_user"],
+            password=INFLUXDB_SETTINGS["db_pass"],
+            database=INFLUXDB_SETTINGS["db_name"],
+            ssl=False,
+        )
+
         self.metric = metric
         if TESTING:
-            self.metric = "%s-testing" % self.metric
+            self.metric = f"{metric}-testing"
         self.reset_query()
 
     def reset_query(self):
