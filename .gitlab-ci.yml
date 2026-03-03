@@ -18,4 +18,4 @@ test:
     - pip install poetry
     - poetry install
   script:
-    - poetry run nosetests grafane
+    - poetry run pytest tests
