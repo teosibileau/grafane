@@ -4,7 +4,7 @@ from decimal import Decimal
 from datetime import datetime, timedelta
 from dateutil.parser import parse
 from freezegun import freeze_time
-from grafane import Grafane
+from grafane import Grafane, WrongArgumentType
 
 
 @pytest.fixture
@@ -171,3 +171,50 @@ def test_group_by_tag(client, points):
         assert len(results) == len(tag_occurances[tag].keys())
         for r in results:
             assert tag_occurances[tag][r["tags"][tag]] == r["count"]
+
+
+def test_filter_by(client, points):
+    client.report_points(points)
+    client.select("value", "count")
+    client.filter_by(tag="tag1", operator="=", value="value1")
+    results = client.execute_query()
+    assert len(results) == 1
+    assert results[0]["count"] == 2
+
+
+def test_filter_by_from_dict_single(client, points):
+    client.report_points(points)
+    client.select("value", "count")
+    client.filter_by_from_dict({"tag": "tag1", "operator": "=", "value": "value1"})
+    results = client.execute_query()
+    assert len(results) == 1
+    assert results[0]["count"] == 2
+
+
+def test_filter_by_from_dict_multiple(client, points):
+    client.report_points(points)
+    client.select("value", "count")
+    client.filter_by_from_dict(
+        [
+            {"tag": "tag1", "operator": "=", "value": "value1"},
+            {"tag": "tag2", "operator": "=", "value": "value2"},
+        ]
+    )
+    results = client.execute_query()
+    assert len(results) == 1
+    assert results[0]["count"] == 2
+
+
+def test_filter_by_from_dict_invalid_type(client):
+    with pytest.raises(TypeError):
+        client.filter_by_from_dict("invalid")
+
+
+def test_filter_by_from_dict_invalid_tuple(client):
+    with pytest.raises(TypeError):
+        client.filter_by_from_dict(("tag", "=", "value"))
+
+
+def test_filter_by_from_dict_missing_key(client, points):
+    with pytest.raises(TypeError):
+        client.filter_by_from_dict([{"tag": "tag1", "operator": "="}])

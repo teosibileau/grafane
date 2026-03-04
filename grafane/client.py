@@ -156,7 +156,7 @@ class Grafane(InfluxDBClient):
     def filter_by_from_dict(self, filter_by):
         if type(filter_by) not in [list, dict]:
             raise WrongArgumentType(
-                "Time range should be provided as a list or a tuple"
+                "Filter should be provided as a list or a dictionary"
             )
         if type(filter_by) == dict:
             filter_by = [filter_by]
