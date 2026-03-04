@@ -21,3 +21,9 @@ setuptools = "*"
 
 [tool.poetry.scripts]
 grafane = "grafane.client:Grafane"
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::DeprecationWarning:influxdb.*",
+    "ignore::DeprecationWarning:pytest_freezegun.*",
+]

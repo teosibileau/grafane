@@ -1,5 +1,7 @@
+from unittest.mock import MagicMock
 import pytest
 import pytz
+import warnings
 from decimal import Decimal
 from datetime import datetime, timedelta
 from dateutil.parser import parse
@@ -171,3 +173,210 @@ def test_group_by_tag(client, points):
         assert len(results) == len(tag_occurances[tag].keys())
         for r in results:
             assert tag_occurances[tag][r["tags"][tag]] == r["count"]
+
+
+def test_filter_by(client, points):
+    client.report_points(points)
+    client.select("value", "count")
+    client.filter_by(tag="tag1", operator="=", value="value1")
+    results = client.execute_query()
+    assert len(results) == 1
+    assert results[0]["count"] == 2
+
+
+def test_filter_by_from_dict_single(client, points):
+    client.report_points(points)
+    client.select("value", "count")
+    client.filter_by_from_dict({"tag": "tag1", "operator": "=", "value": "value1"})
+    results = client.execute_query()
+    assert len(results) == 1
+    assert results[0]["count"] == 2
+
+
+def test_filter_by_from_dict_multiple(client, points):
+    client.report_points(points)
+    client.select("value", "count")
+    client.filter_by_from_dict(
+        [
+            {"tag": "tag1", "operator": "=", "value": "value1"},
+            {"tag": "tag2", "operator": "=", "value": "value2"},
+        ]
+    )
+    results = client.execute_query()
+    assert len(results) == 1
+    assert results[0]["count"] == 2
+
+
+def test_filter_by_from_dict_invalid_type(client):
+    with pytest.raises(TypeError):
+        client.filter_by_from_dict("invalid")
+
+
+def test_filter_by_from_dict_invalid_tuple(client):
+    with pytest.raises(TypeError):
+        client.filter_by_from_dict(("tag", "=", "value"))
+
+
+def test_filter_by_from_dict_missing_key(client, points):
+    with pytest.raises(TypeError):
+        client.filter_by_from_dict([{"tag": "tag1", "operator": "="}])
+
+
+def test_execute_query_caches_results(client, points):
+    client.report_points(points)
+    client.select()
+    result1 = client.execute_query()
+    result2 = client.execute_query()
+    assert result1 == result2
+    assert client._results == result1
+
+
+def test_execute_query_sets_executed_flag(client, points):
+    client.report_points(points)
+    client.select()
+    assert client._executed is False
+    client.execute_query()
+    assert client._executed is True
+
+
+def test_reset_query_clears_executed_flag(client, points):
+    client.report_points(points)
+    client.select()
+    client.execute_query()
+    assert client._executed is True
+    client.reset_query()
+    assert client._executed is False
+
+
+def test_reset_query_clears_results(client, points):
+    client.report_points(points)
+    client.select()
+    client.execute_query()
+    assert client._results is not None
+    client.reset_query()
+    assert client._results is None
+
+
+def test_iter_triggers_query_execution(client, points):
+    client.report_points(points)
+    client.select()
+    results = []
+    for row in client:
+        results.append(row)
+    assert len(results) == len(points)
+
+
+def test_len_triggers_query_execution(client, points):
+    client.report_points(points)
+    client.select()
+    assert len(client) == len(points)
+
+
+def test_bool_triggers_query_execution(client, points):
+    client.report_points(points)
+    client.select()
+    assert bool(client) is True
+
+
+def test_bool_false_for_empty_results(client):
+    client.select()
+    assert bool(client) is False
+
+
+def test_iter_reuses_cached_results(client, points):
+    client.report_points(points)
+    client.select()
+    results1 = list(client)
+    results2 = list(client)
+    assert results1 == results2
+
+
+def test_cache_invalidation_decorator_calls_function():
+    """Decorator should call the wrapped function."""
+    from grafane.client import cache_invalidation
+
+    mock_func = MagicMock(return_value="result")
+    decorated = cache_invalidation(mock_func)
+
+    mock_self = MagicMock()
+    result = decorated(mock_self)
+
+    mock_func.assert_called_once_with(mock_self)
+    assert result == "result"
+
+
+def test_cache_invalidation_resets_when_executed():
+    """Decorator should call reset_query when _executed is True."""
+    from grafane.client import cache_invalidation
+
+    mock_func = MagicMock(return_value="result")
+    decorated = cache_invalidation(mock_func)
+
+    mock_self = MagicMock()
+    mock_self._executed = True
+
+    result = decorated(mock_self)
+
+    mock_self.reset_query.assert_called_once()
+    assert result == "result"
+
+
+def test_cache_invalidation_does_not_reset_when_not_executed():
+    """Decorator should NOT call reset_query when _executed is False."""
+    from grafane.client import cache_invalidation
+
+    mock_func = MagicMock(return_value="result")
+    decorated = cache_invalidation(mock_func)
+
+    mock_self = MagicMock()
+    mock_self._executed = False
+
+    result = decorated(mock_self)
+
+    mock_self.reset_query.assert_not_called()
+    assert result == "result"
+
+
+def test_cache_invalidation_passes_args():
+    """Decorator should pass arguments to wrapped function."""
+    from grafane.client import cache_invalidation
+
+    mock_func = MagicMock(return_value="result")
+    decorated = cache_invalidation(mock_func)
+
+    mock_self = MagicMock()
+
+    result = decorated(mock_self, "arg1", "arg2", key="value")
+
+    mock_func.assert_called_once_with(mock_self, "arg1", "arg2", key="value")
+    assert result == "result"
+
+
+def test_chaining_select_and_filter(client, points):
+    client.report_points(points)
+    client.select(fields=["value"], aggregation=["count"]).filter_by(
+        tag="tag1", operator="=", value="value1"
+    )
+    results = list(client)
+    assert len(results) == 1
+    assert results[0]["count"] == 2
+
+
+def test_chaining_full(client, points):
+    client.report_points(points)
+    client.select(fields=["value"], aggregation=["sum"]).filter_by(
+        tag="tag1", operator="=", value="value1"
+    ).group_by("tag2")
+    results = list(client)
+    assert len(results) > 0
+
+
+def test_filter_by_from_dict_deprecation_warning(client):
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        client.filter_by_from_dict(
+            [{"tag": "tag1", "operator": "=", "value": "value1"}]
+        )
+        assert len(w) == 1
+        assert issubclass(w[0].category, DeprecationWarning)
+        assert "deprecated" in str(w[0].message)
