@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock
 import pytest
 import pytz
+import warnings
 from decimal import Decimal
 from datetime import datetime, timedelta
 from dateutil.parser import parse
@@ -368,3 +369,14 @@ def test_chaining_full(client, points):
     ).group_by("tag2")
     results = list(client)
     assert len(results) > 0
+
+
+def test_filter_by_from_dict_deprecation_warning(client):
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        client.filter_by_from_dict(
+            [{"tag": "tag1", "operator": "=", "value": "value1"}]
+        )
+        assert len(w) == 1
+        assert issubclass(w[0].category, DeprecationWarning)
+        assert "deprecated" in str(w[0].message)

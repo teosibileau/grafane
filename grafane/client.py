@@ -2,6 +2,7 @@ import time
 import pytz
 import copy
 import functools
+import warnings
 from datetime import datetime
 from .settings import INFLUXDB_SETTINGS, TESTING
 from influxdb import InfluxDBClient
@@ -179,6 +180,11 @@ class Grafane(InfluxDBClient):
 
     @cache_invalidation
     def filter_by_from_dict(self, filter_by):
+        warnings.warn(
+            "filter_by_from_dict is deprecated. Use chained filter_by() calls instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         if not isinstance(filter_by, (list, dict)):
             raise WrongArgumentType(
                 "Filter should be provided as a list or a dictionary"
@@ -191,6 +197,7 @@ class Grafane(InfluxDBClient):
                 if v not in f:
                     raise WrongArgumentType("Missing filter_by[%s] key" % v)
             self.filter_by(**f)
+        return self
         return self
 
     @cache_invalidation
