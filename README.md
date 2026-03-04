@@ -98,7 +98,7 @@ datetime.datetime(2019, 2, 8, 19, 32, 38, 788003, tzinfo=<UTC>)
 
 ### Select
 
-![](docs/select.png)
+![](.docs/select.png)
 
 ```python
 In [6]: c.select(fields='value')                                                                                                                                                                            
@@ -113,7 +113,7 @@ Out[7]:
 
 ### Select multiple fields
 
-![](docs/select_multiple.png)
+![](.docs/select_multiple.png)
 
 ```python
 In [16]: c.select(fields=['value', 'value2'])                                                                                                                                                               
@@ -128,7 +128,7 @@ Out[17]:
 
 ### Select w/ aggregation
 
-![](docs/select_w_aggregation.png)
+![](.docs/select_w_aggregation.png)
 
 ```python
 In [18]: c.select(fields='value', aggregation='sum')                                                                                                                                                        
@@ -140,7 +140,7 @@ Out[19]: [{'time': '1970-01-01T00:00:00Z', 'sum': 6.26}]
 
 ### Select multiple fields w/ aggregation
 
-![](docs/select_multiple_w_aggregation.png)
+![](.docs/select_multiple_w_aggregation.png)
 
 ```python
 In [20]: c.select(fields=['value', 'value2'], aggregation=['sum', 'mean'])                                                                                                                                  
@@ -151,7 +151,7 @@ Out[21]: [{'time': '1970-01-01T00:00:00Z', 'sum': 6.26, 'mean': 1.6625}]
 
 ### Group aggregated results in time blocks
 
-![](docs/select_group_by_timeblock.png)
+![](.docs/select_group_by_timeblock.png)
 
 ```python
 In [22]: c.select(fields=['value', 'value2'], aggregation=['sum', 'mean'])                                                                                                                                  
@@ -170,7 +170,7 @@ Out[24]:
  
 When grouping time blocks, in order to avoid empty rows you need to fill results with **None**
 
-![](docs/select_group_by_timeblock_filled_w_none.png)
+![](.docs/select_group_by_timeblock_filled_w_none.png)
 
 ```python
 In [29]: c.select(fields=['value', 'value2'], aggregation=['sum', 'mean'])                                                                                                                                  
@@ -185,7 +185,7 @@ Out[32]: [{'time': '2019-02-10T20:42:00Z', 'sum': 6.26, 'mean': 1.6625}]
 
 ### Group aggregated results by tag values
 
-![](docs/group_by.png)
+![](.docs/group_by.png)
 
 ```python
 In [34]: c.select(fields=['value', 'value2'], aggregation=['sum', 'mean'])                                                                                                                                  
