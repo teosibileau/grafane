@@ -73,9 +73,9 @@ class Grafane(InfluxDBClient):
     def select(self, fields=["value"], aggregation=[]):
         self.fields, self.aggregation = [], []
         # Validate fields
-        if type(fields) == list:
+        if isinstance(fields, list):
             self.fields = fields
-        elif type(fields) == str:
+        elif isinstance(fields, str):
             self.fields = [fields]
         else:
             raise WrongArgumentType(
@@ -83,7 +83,7 @@ class Grafane(InfluxDBClient):
             )
         # Validate Aggregation
         if len(aggregation):
-            if type(aggregation) == list:
+            if isinstance(aggregation, list):
                 if len(aggregation) == len(self.fields):
                     self.aggregation = aggregation
                 elif len(aggregation) == 1:
@@ -94,7 +94,7 @@ class Grafane(InfluxDBClient):
                         + "the same len as fields or 1",
                         ["lenght: %s" % len(aggregation)],
                     )
-            elif type(aggregation) == str:
+            elif isinstance(aggregation, str):
                 self.aggregation = [aggregation for i in range(len(self.fields))]
             else:
                 raise WrongArgumentType(
@@ -120,7 +120,7 @@ class Grafane(InfluxDBClient):
         self.rebuild_query()
 
     def filter_time_range(self, r):
-        if type(r) not in [list, tuple]:
+        if not isinstance(r, (list, tuple)):
             raise WrongArgumentType(
                 "Time range should be provided as a list or a tuple"
             )
@@ -154,11 +154,11 @@ class Grafane(InfluxDBClient):
         self.rebuild_query()
 
     def filter_by_from_dict(self, filter_by):
-        if type(filter_by) not in [list, dict]:
+        if not isinstance(filter_by, (list, dict)):
             raise WrongArgumentType(
                 "Filter should be provided as a list or a dictionary"
             )
-        if type(filter_by) == dict:
+        if isinstance(filter_by, dict):
             filter_by = [filter_by]
         validate = ["tag", "operator", "value"]
         for f in filter_by:
