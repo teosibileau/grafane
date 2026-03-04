@@ -1,3 +1,4 @@
+from unittest.mock import MagicMock
 import pytest
 import pytz
 from decimal import Decimal
@@ -287,3 +288,83 @@ def test_iter_reuses_cached_results(client, points):
     results1 = list(client)
     results2 = list(client)
     assert results1 == results2
+
+
+def test_cache_invalidation_decorator_calls_function():
+    """Decorator should call the wrapped function."""
+    from grafane.client import cache_invalidation
+
+    mock_func = MagicMock(return_value="result")
+    decorated = cache_invalidation(mock_func)
+
+    mock_self = MagicMock()
+    result = decorated(mock_self)
+
+    mock_func.assert_called_once_with(mock_self)
+    assert result == "result"
+
+
+def test_cache_invalidation_resets_when_executed():
+    """Decorator should call reset_query when _executed is True."""
+    from grafane.client import cache_invalidation
+
+    mock_func = MagicMock(return_value="result")
+    decorated = cache_invalidation(mock_func)
+
+    mock_self = MagicMock()
+    mock_self._executed = True
+
+    result = decorated(mock_self)
+
+    mock_self.reset_query.assert_called_once()
+    assert result == "result"
+
+
+def test_cache_invalidation_does_not_reset_when_not_executed():
+    """Decorator should NOT call reset_query when _executed is False."""
+    from grafane.client import cache_invalidation
+
+    mock_func = MagicMock(return_value="result")
+    decorated = cache_invalidation(mock_func)
+
+    mock_self = MagicMock()
+    mock_self._executed = False
+
+    result = decorated(mock_self)
+
+    mock_self.reset_query.assert_not_called()
+    assert result == "result"
+
+
+def test_cache_invalidation_passes_args():
+    """Decorator should pass arguments to wrapped function."""
+    from grafane.client import cache_invalidation
+
+    mock_func = MagicMock(return_value="result")
+    decorated = cache_invalidation(mock_func)
+
+    mock_self = MagicMock()
+
+    result = decorated(mock_self, "arg1", "arg2", key="value")
+
+    mock_func.assert_called_once_with(mock_self, "arg1", "arg2", key="value")
+    assert result == "result"
+
+
+def test_chaining_select_and_filter(client, points):
+    client.report_points(points)
+    client.select(fields=["value"], aggregation=["count"]).filter_by(
+        tag="tag1", operator="=", value="value1"
+    )
+    results = list(client)
+    assert len(results) == 1
+    assert results[0]["count"] == 2
+
+
+def test_chaining_full(client, points):
+    client.report_points(points)
+    client.select(fields=["value"], aggregation=["sum"]).filter_by(
+        tag="tag1", operator="=", value="value1"
+    ).group_by("tag2")
+    results = list(client)
+    assert len(results) > 0

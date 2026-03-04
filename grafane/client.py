@@ -1,9 +1,22 @@
 import time
 import pytz
 import copy
+import functools
 from datetime import datetime
 from .settings import INFLUXDB_SETTINGS, TESTING
 from influxdb import InfluxDBClient
+
+
+def cache_invalidation(func):
+    """Decorator that resets query cache before executing query-building methods."""
+
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        if self._executed:
+            self.reset_query()
+        return func(self, *args, **kwargs)
+
+    return wrapper
 
 
 class MissingInfluxDBSettings(Exception):
@@ -74,6 +87,7 @@ class Grafane(InfluxDBClient):
         if self.fill:
             self.sql = "%s fill(%s)" % (self.sql, self.fill)
 
+    @cache_invalidation
     def select(self, fields=["value"], aggregation=[]):
         self.fields, self.aggregation = [], []
         # Validate fields
@@ -107,9 +121,9 @@ class Grafane(InfluxDBClient):
                 )
         # Rebuild query
         self.rebuild_query()
-        self._executed = False
-        self._results = None
+        return self
 
+    @cache_invalidation
     def time_block(self, block):
         block = "time(%s)" % block
         for g in self.group:
@@ -117,8 +131,7 @@ class Grafane(InfluxDBClient):
                 self.group.remove(g)
         self.group = [block] + self.group
         self.rebuild_query()
-        self._executed = False
-        self._results = None
+        return self
 
     def set_time_range(self, block):
         for f in self.filter:
@@ -127,6 +140,7 @@ class Grafane(InfluxDBClient):
         self.filter = [block] + self.filter
         self.rebuild_query()
 
+    @cache_invalidation
     def filter_time_range(self, r):
         if not isinstance(r, (list, tuple)):
             raise WrongArgumentType(
@@ -153,8 +167,7 @@ class Grafane(InfluxDBClient):
         conditions.append(f)
         block = " AND ".join(conditions)
         self.set_time_range(block)
-        self._executed = False
-        self._results = None
+        return self
 
     def filter_value_in(self, tag, values):
         if values:
@@ -162,7 +175,9 @@ class Grafane(InfluxDBClient):
             filters = "(%s)" % (" OR ".join(filters))
             self.filter.append(filters)
         self.rebuild_query()
+        return self
 
+    @cache_invalidation
     def filter_by_from_dict(self, filter_by):
         if not isinstance(filter_by, (list, dict)):
             raise WrongArgumentType(
@@ -176,13 +191,17 @@ class Grafane(InfluxDBClient):
                 if v not in f:
                     raise WrongArgumentType("Missing filter_by[%s] key" % v)
             self.filter_by(**f)
+        return self
 
+    @cache_invalidation
     def filter_by(self, tag, operator, value):
         f = "(\"%s\" %s '%s')" % (tag, operator, value)
         if f not in self.filter:
             self.filter.append(f)
             self.rebuild_query()
+        return self
 
+    @cache_invalidation
     def fill_with(self, fill=False):
         f = ["none", "null", "0", "previous", "linear"]
         if fill and fill in f:
@@ -190,7 +209,9 @@ class Grafane(InfluxDBClient):
         else:
             self.fill = False
         self.rebuild_query()
+        return self
 
+    @cache_invalidation
     def group_by(self, group):
         # Enforce aggregation
         if len(self.aggregation) == 0:
@@ -203,8 +224,7 @@ class Grafane(InfluxDBClient):
         # Remove duplicates
         self.group = list(set(self.group))
         self.rebuild_query()
-        self._executed = False
-        self._results = None
+        return self
 
     def report(self, fields, tags, timestamp=False):
         tags["origin"] = self.uuid
