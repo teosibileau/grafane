@@ -282,6 +282,15 @@ class Grafane(InfluxDBClient):
         self._executed = True
         return self._results
 
+    def __iter__(self):
+        return iter(self.execute_query())
+
+    def __len__(self):
+        return len(self.execute_query())
+
+    def __bool__(self):
+        return bool(self.execute_query())
+
     def drop_measurement(self, metric=False):
         if not metric:
             metric = self.metric

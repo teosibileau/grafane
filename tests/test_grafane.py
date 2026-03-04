@@ -253,3 +253,37 @@ def test_reset_query_clears_results(client, points):
     assert client._results is not None
     client.reset_query()
     assert client._results is None
+
+
+def test_iter_triggers_query_execution(client, points):
+    client.report_points(points)
+    client.select()
+    results = []
+    for row in client:
+        results.append(row)
+    assert len(results) == len(points)
+
+
+def test_len_triggers_query_execution(client, points):
+    client.report_points(points)
+    client.select()
+    assert len(client) == len(points)
+
+
+def test_bool_triggers_query_execution(client, points):
+    client.report_points(points)
+    client.select()
+    assert bool(client) is True
+
+
+def test_bool_false_for_empty_results(client):
+    client.select()
+    assert bool(client) is False
+
+
+def test_iter_reuses_cached_results(client, points):
+    client.report_points(points)
+    client.select()
+    results1 = list(client)
+    results2 = list(client)
+    assert results1 == results2
