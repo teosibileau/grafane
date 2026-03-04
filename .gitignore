@@ -46,3 +46,4 @@ src/
 src/*
 
 .gitlab-ci-local
+.env
