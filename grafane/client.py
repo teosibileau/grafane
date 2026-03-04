@@ -41,6 +41,8 @@ class Grafane(InfluxDBClient):
         self.metric = metric
         if TESTING:
             self.metric = f"{metric}-testing"
+        self._results = None
+        self._executed = False
         self.reset_query()
 
     def reset_query(self):
@@ -51,6 +53,8 @@ class Grafane(InfluxDBClient):
         self.filter = []
         self.time_range = []
         self.fill = False
+        self._results = None
+        self._executed = False
         self.rebuild_query()
 
     def rebuild_query(self):
@@ -103,6 +107,8 @@ class Grafane(InfluxDBClient):
                 )
         # Rebuild query
         self.rebuild_query()
+        self._executed = False
+        self._results = None
 
     def time_block(self, block):
         block = "time(%s)" % block
@@ -111,6 +117,8 @@ class Grafane(InfluxDBClient):
                 self.group.remove(g)
         self.group = [block] + self.group
         self.rebuild_query()
+        self._executed = False
+        self._results = None
 
     def set_time_range(self, block):
         for f in self.filter:
@@ -145,6 +153,8 @@ class Grafane(InfluxDBClient):
         conditions.append(f)
         block = " AND ".join(conditions)
         self.set_time_range(block)
+        self._executed = False
+        self._results = None
 
     def filter_value_in(self, tag, values):
         if values:
@@ -193,6 +203,8 @@ class Grafane(InfluxDBClient):
         # Remove duplicates
         self.group = list(set(self.group))
         self.rebuild_query()
+        self._executed = False
+        self._results = None
 
     def report(self, fields, tags, timestamp=False):
         tags["origin"] = self.uuid
@@ -250,12 +262,14 @@ class Grafane(InfluxDBClient):
         return results
 
     def execute_query(self, uuid=None):
+        if self._executed:
+            return self._results
         if uuid:
             self.filter_by("origin", "=", uuid)
         tagged_response = len(list(set(g for g in self.group if "time(" not in g))) > 0
         self.results = self.query(self.sql)
         if not tagged_response:
-            return list(self.results.get_points())
+            self._results = list(self.results.get_points())
         else:
             r = []
             for row in self.results.raw["series"]:
@@ -264,7 +278,9 @@ class Grafane(InfluxDBClient):
                     for c in range(len(row["columns"])):
                         i[row["columns"][c]] = v[c]
                 r.append(i)
-            return r
+            self._results = r
+        self._executed = True
+        return self._results
 
     def drop_measurement(self, metric=False):
         if not metric:

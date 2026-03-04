@@ -218,3 +218,38 @@ def test_filter_by_from_dict_invalid_tuple(client):
 def test_filter_by_from_dict_missing_key(client, points):
     with pytest.raises(TypeError):
         client.filter_by_from_dict([{"tag": "tag1", "operator": "="}])
+
+
+def test_execute_query_caches_results(client, points):
+    client.report_points(points)
+    client.select()
+    result1 = client.execute_query()
+    result2 = client.execute_query()
+    assert result1 == result2
+    assert client._results == result1
+
+
+def test_execute_query_sets_executed_flag(client, points):
+    client.report_points(points)
+    client.select()
+    assert client._executed is False
+    client.execute_query()
+    assert client._executed is True
+
+
+def test_reset_query_clears_executed_flag(client, points):
+    client.report_points(points)
+    client.select()
+    client.execute_query()
+    assert client._executed is True
+    client.reset_query()
+    assert client._executed is False
+
+
+def test_reset_query_clears_results(client, points):
+    client.report_points(points)
+    client.select()
+    client.execute_query()
+    assert client._results is not None
+    client.reset_query()
+    assert client._results is None
