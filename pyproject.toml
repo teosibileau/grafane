@@ -19,6 +19,10 @@ pytest = "^9.0.2"
 pytest-freezegun = "^0.4.2"
 setuptools = "*"
 
+
+[tool.poetry.group.notebooks.dependencies]
+notebook = "^7.5.4"
+
 [tool.poetry.scripts]
 grafane = "grafane.client:Grafane"
 

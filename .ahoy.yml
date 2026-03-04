@@ -5,3 +5,7 @@ commands:
     usage: A series of docker commands (experimental)
     imports:
       - .ahoy/docker.ahoy.yml
+  notebooks:
+    usage: Run Jupyter notebooks
+    imports:
+      - .ahoy/notebooks.ahoy.yml
