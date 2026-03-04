@@ -4,7 +4,7 @@ from decimal import Decimal
 from datetime import datetime, timedelta
 from dateutil.parser import parse
 from freezegun import freeze_time
-from grafane import Grafane, WrongArgumentType
+from grafane import Grafane
 
 
 @pytest.fixture
