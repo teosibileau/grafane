@@ -1,10 +1,9 @@
-import time
 import pytz
 import copy
 import functools
-import warnings
 from datetime import datetime
 from .settings import INFLUXDB_SETTINGS, TESTING
+from .querysets import InfluxQLQuerySet
 from influxdb import InfluxDBClient
 
 
@@ -23,12 +22,6 @@ def cache_invalidation(func):
 class MissingInfluxDBSettings(Exception):
     def __init__(self, message, errors):
         super(MissingInfluxDBSettings, self).__init__(message)
-        self.errors = errors
-
-
-class WrongArgumentType(Exception):
-    def __init__(self, message, errors):
-        super(WrongArgumentType, self).__init__(message)
         self.errors = errors
 
 
@@ -55,184 +48,98 @@ class Grafane:
         self.metric = metric
         if TESTING:
             self.metric = f"{metric}-testing"
+
+        self._queryset = InfluxQLQuerySet(self.metric)
         self._results = None
         self._executed = False
-        self.reset_query()
 
+    # === Query State ===
     def reset_query(self):
-        self.results = None
-        self.fields = []
-        self.aggregation = []
-        self.group = []
-        self.filter = []
-        self.time_range = []
-        self.fill = False
+        self._queryset.reset()
         self._results = None
         self._executed = False
-        self.rebuild_query()
 
-    def rebuild_query(self):
-        if not len(self.fields):
-            self.fields = ["value"]
-        if len(self.aggregation):
-            for i in range(len(self.fields)):
-                if self.aggregation[i] not in self.fields[i]:
-                    self.fields[i] = '%s("%s")' % (self.aggregation[i], self.fields[i])
-        else:
-            self.fields = ["%s" % f for f in self.fields]
-        self.sql = 'SELECT %s FROM "%s"' % (", ".join(self.fields), self.metric)
-        if len(self.filter):
-            self.sql = "%s WHERE %s" % (self.sql, " AND ".join(self.filter))
-        if len(self.group):
-            self.sql = "%s GROUP BY %s" % (self.sql, ",".join(self.group))
-        if self.fill:
-            self.sql = "%s fill(%s)" % (self.sql, self.fill)
-
+    # === Delegation to QuerySet ===
     @cache_invalidation
     def select(self, fields=["value"], aggregation=[]):
-        self.fields, self.aggregation = [], []
-        # Validate fields
-        if isinstance(fields, list):
-            self.fields = fields
-        elif isinstance(fields, str):
-            self.fields = [fields]
-        else:
-            raise WrongArgumentType(
-                "Fields must be either a list or a string", [type(self.fields)]
-            )
-        # Validate Aggregation
-        if len(aggregation):
-            if isinstance(aggregation, list):
-                if len(aggregation) == len(self.fields):
-                    self.aggregation = aggregation
-                elif len(aggregation) == 1:
-                    self.aggregation = [aggregation[0] for i in range(len(self.fields))]
-                else:
-                    raise WrongArgumentType(
-                        "Aggregation as a list should be either"
-                        + "the same len as fields or 1",
-                        ["lenght: %s" % len(aggregation)],
-                    )
-            elif isinstance(aggregation, str):
-                self.aggregation = [aggregation for i in range(len(self.fields))]
-            else:
-                raise WrongArgumentType(
-                    "Aggregation should either be a list or a string",
-                    [type(aggregation)],
-                )
-        # Rebuild query
-        self.rebuild_query()
-        return self
-
-    @cache_invalidation
-    def time_block(self, block):
-        block = "time(%s)" % block
-        for g in self.group:
-            if "time(" in g:
-                self.group.remove(g)
-        self.group = [block] + self.group
-        self.rebuild_query()
-        return self
-
-    def set_time_range(self, block):
-        for f in self.filter:
-            if "time" in f:
-                self.filter.remove(f)
-        self.filter = [block] + self.filter
-        self.rebuild_query()
-
-    @cache_invalidation
-    def filter_time_range(self, r):
-        if not isinstance(r, (list, tuple)):
-            raise WrongArgumentType(
-                "Time range should be provided as a list or a tuple"
-            )
-        r = copy.deepcopy(list(r))
-        if len(r) == 2:
-            if r[0] > r[1]:
-                f, t = r[1], r[0]
-            else:
-                f, t = r[0], r[1]
-        else:
-            f = r[0]
-            t = False
-        conditions = []
-        if t:
-            t = time.mktime(t.timetuple())
-            t = int(t) * 1000
-            t = "(time <= %sms)" % int(t)
-            conditions.append(t)
-        f = time.mktime(f.timetuple())
-        f = int(f) * 1000
-        f = "(time >= %sms)" % int(f)
-        conditions.append(f)
-        block = " AND ".join(conditions)
-        self.set_time_range(block)
-        return self
-
-    def filter_value_in(self, tag, values):
-        if values:
-            filters = ["(\"%s\" = '%s')" % (tag, v) for v in values]
-            filters = "(%s)" % (" OR ".join(filters))
-            self.filter.append(filters)
-        self.rebuild_query()
-        return self
-
-    @cache_invalidation
-    def filter_by_from_dict(self, filter_by):
-        warnings.warn(
-            "filter_by_from_dict is deprecated. Use chained filter_by() calls instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        if not isinstance(filter_by, (list, dict)):
-            raise WrongArgumentType(
-                "Filter should be provided as a list or a dictionary"
-            )
-        if isinstance(filter_by, dict):
-            filter_by = [filter_by]
-        validate = ["tag", "operator", "value"]
-        for f in filter_by:
-            for v in validate:
-                if v not in f:
-                    raise WrongArgumentType("Missing filter_by[%s] key" % v)
-            self.filter_by(**f)
-        return self
+        self._queryset.select(fields, aggregation)
         return self
 
     @cache_invalidation
     def filter_by(self, tag, operator, value):
-        f = "(\"%s\" %s '%s')" % (tag, operator, value)
-        if f not in self.filter:
-            self.filter.append(f)
-            self.rebuild_query()
+        self._queryset.filter_by(tag, operator, value)
         return self
 
     @cache_invalidation
-    def fill_with(self, fill=False):
-        f = ["none", "null", "0", "previous", "linear"]
-        if fill and fill in f:
-            self.fill = fill
-        else:
-            self.fill = False
-        self.rebuild_query()
+    def filter_by_from_dict(self, filter_by):
+        self._queryset.filter_by_from_dict(filter_by)
+        return self
+
+    @cache_invalidation
+    def filter_time_range(self, r):
+        self._queryset.filter_time_range(r)
+        return self
+
+    @cache_invalidation
+    def time_block(self, block):
+        self._queryset.time_block(block)
         return self
 
     @cache_invalidation
     def group_by(self, group):
-        # Enforce aggregation
-        if len(self.aggregation) == 0:
-            raise WrongArgumentType("In order to group results, aggregate first")
-        # If group is a string, wrap in a list
-        if isinstance(group, str):
-            group = [group]
-        for g in group:
-            self.group.append('"%s"' % g)
-        # Remove duplicates
-        self.group = list(set(self.group))
-        self.rebuild_query()
+        self._queryset.group_by(group)
         return self
 
+    @cache_invalidation
+    def fill_with(self, fill=False):
+        self._queryset.fill_with(fill)
+        return self
+
+    def filter_value_in(self, tag, values):
+        if self._executed:
+            self.reset_query()
+        self._queryset.filter_value_in(tag, values)
+        return self
+
+    # === Execution ===
+    def execute_query(self, uuid=None):
+        if self._executed:
+            return self._results
+        if uuid:
+            self._queryset.filter_by("origin", "=", uuid)
+
+        raw_results = self._client.query(self._queryset.query)
+        self._results = self._queryset.parse_results(raw_results)
+        self._executed = True
+        return self._results
+
+    def query(
+        self,
+        query,
+        params=None,
+        epoch=None,
+        expected_response_code=200,
+        database=None,
+        raise_errors=True,
+        chunked=False,
+        chunk_size=0,
+        method="GET",
+    ):
+        results = self._client.query(
+            query,
+            params,
+            epoch,
+            expected_response_code,
+            database,
+            raise_errors,
+            chunked,
+            chunk_size,
+            method,
+        )
+        self.reset_query()
+        return results
+
+    # === Data Operations ===
     def report(self, fields, tags, timestamp=False):
         tags["origin"] = self.uuid
         d = {
@@ -262,53 +169,12 @@ class Grafane:
             return r
         return False
 
-    def query(
-        self,
-        query,
-        params=None,
-        epoch=None,
-        expected_response_code=200,
-        database=None,
-        raise_errors=True,
-        chunked=False,
-        chunk_size=0,
-        method="GET",
-    ):
-        results = self._client.query(
-            query,
-            params,
-            epoch,
-            expected_response_code,
-            database,
-            raise_errors,
-            chunked,
-            chunk_size,
-            method,
-        )
-        self.reset_query()
-        return results
+    def drop_measurement(self, metric=False):
+        if not metric:
+            metric = self.metric
+        self._client.drop_measurement(metric)
 
-    def execute_query(self, uuid=None):
-        if self._executed:
-            return self._results
-        if uuid:
-            self.filter_by("origin", "=", uuid)
-        tagged_response = len(list(set(g for g in self.group if "time(" not in g))) > 0
-        self.results = self.query(self.sql)
-        if not tagged_response:
-            self._results = list(self.results.get_points())
-        else:
-            r = []
-            for row in self.results.raw["series"]:
-                for v in row["values"]:
-                    i = {"tags": row["tags"]}
-                    for c in range(len(row["columns"])):
-                        i[row["columns"][c]] = v[c]
-                r.append(i)
-            self._results = r
-        self._executed = True
-        return self._results
-
+    # === Iteration ===
     def __iter__(self):
         return iter(self.execute_query())
 
@@ -317,8 +183,3 @@ class Grafane:
 
     def __bool__(self):
         return bool(self.execute_query())
-
-    def drop_measurement(self, metric=False):
-        if not metric:
-            metric = self.metric
-        self._client.drop_measurement(metric)

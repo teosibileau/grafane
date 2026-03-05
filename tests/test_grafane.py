@@ -6,7 +6,7 @@ from decimal import Decimal
 from datetime import datetime, timedelta
 from dateutil.parser import parse
 from freezegun import freeze_time
-from grafane import Grafane
+from grafane import Grafane, WrongArgumentType
 
 
 @pytest.fixture
@@ -208,17 +208,17 @@ def test_filter_by_from_dict_multiple(client, points):
 
 
 def test_filter_by_from_dict_invalid_type(client):
-    with pytest.raises(TypeError):
+    with pytest.raises(WrongArgumentType):
         client.filter_by_from_dict("invalid")
 
 
 def test_filter_by_from_dict_invalid_tuple(client):
-    with pytest.raises(TypeError):
+    with pytest.raises(WrongArgumentType):
         client.filter_by_from_dict(("tag", "=", "value"))
 
 
 def test_filter_by_from_dict_missing_key(client, points):
-    with pytest.raises(TypeError):
+    with pytest.raises(WrongArgumentType):
         client.filter_by_from_dict([{"tag": "tag1", "operator": "="}])
 
 
