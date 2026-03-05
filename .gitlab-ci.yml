@@ -1,9 +1,7 @@
-image: python:3.10
-
 stages:
   - test
 
-test:
+.test_template:
   stage: test
   services:
     - name: influxdb:1.8.10
@@ -19,3 +17,15 @@ test:
     - poetry install
   script:
     - poetry run pytest tests
+
+test:3.10:
+  extends: .test_template
+  image: python:3.10
+
+test:3.11:
+  extends: .test_template
+  image: python:3.11
+
+test:3.12:
+  extends: .test_template
+  image: python:3.12

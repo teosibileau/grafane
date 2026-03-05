@@ -4,7 +4,19 @@ version = "1.0.0"
 description = "Opinionated InfluxDB client"
 authors = ["Teofilo Sibileau <teo.sibileau@gmail.com>"]
 readme = "README.md"
-package-mode = false
+license = "CC-BY-NC-SA-4.0"
+homepage = "https://gitlab.com/grafane/grafane"
+repository = "https://gitlab.com/grafane/grafane"
+keywords = ["influxdb", "grafana", "metrics", "time-series"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Topic :: Database",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+packages = [{include = "grafane"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
