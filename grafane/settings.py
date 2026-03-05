@@ -10,4 +10,4 @@ INFLUXDB_SETTINGS = {
     "db_pass": os.environ.get("INFLUXDB_USER_PASSWORD", "admin123"),
 }
 
-TESTING = bool(os.environ.get("TESTING", "False"))
+TESTING = bool(os.environ.get("TESTING", 0))

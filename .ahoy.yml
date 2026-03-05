@@ -1,7 +1,14 @@
 ahoyapi: v2
 usage: Smart Home cli tools.
+env:
+  - .env
+  - .env.local
 commands:
   docker:
     usage: A series of docker commands (experimental)
     imports:
       - .ahoy/docker.ahoy.yml
+  notebooks:
+    usage: Run Jupyter notebooks
+    imports:
+      - .ahoy/notebooks.ahoy.yml

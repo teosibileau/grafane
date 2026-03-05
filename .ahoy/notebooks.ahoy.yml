@@ -1,0 +1,7 @@
+---
+ahoyapi: v2
+commands:
+  run:
+    usage: Run Jupyter notebooks with no password.
+    cmd: |
+      poetry run jupyter notebook --notebook-dir=.notebooks --NotebookApp.token='' --NotebookApp.password=''
