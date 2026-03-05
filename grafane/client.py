@@ -32,7 +32,7 @@ class WrongArgumentType(Exception):
         self.errors = errors
 
 
-class Grafane(InfluxDBClient):
+class Grafane:
     def __init__(self, metric="generic"):
         self.ignore_query = False
 
@@ -43,7 +43,7 @@ class Grafane(InfluxDBClient):
             )
 
         self.uuid = uuid
-        super(Grafane, self).__init__(
+        self._client = InfluxDBClient(
             host=INFLUXDB_SETTINGS["db_host"],
             port=INFLUXDB_SETTINGS["db_port"],
             username=INFLUXDB_SETTINGS["db_user"],
@@ -258,7 +258,7 @@ class Grafane(InfluxDBClient):
                 p["measurement"] = self.metric
             points[i] = p
         if len(points):
-            r = self.write_points(points)
+            r = self._client.write_points(points)
             return r
         return False
 
@@ -274,7 +274,7 @@ class Grafane(InfluxDBClient):
         chunk_size=0,
         method="GET",
     ):
-        results = super(Grafane, self).query(
+        results = self._client.query(
             query,
             params,
             epoch,
@@ -321,4 +321,4 @@ class Grafane(InfluxDBClient):
     def drop_measurement(self, metric=False):
         if not metric:
             metric = self.metric
-        super(Grafane, self).drop_measurement(metric)
+        self._client.drop_measurement(metric)
