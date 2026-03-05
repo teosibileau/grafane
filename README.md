@@ -1,253 +1,202 @@
 # Grafane
 
-A very opinionated influxdb client that uses the [official python client](https://github.com/influxdata/influxdb-python) and is very much inspired in grafana's query builder.
+A very opinionated InfluxDB client that uses the [official python client](https://github.com/influxdata/influxdb-python) and is inspired by Grafana's query builder.
 
 ## Setup
 
-```
-pip install grafane
-```
+### Installation
 
-In order to query influxdb this library expects the following environment variables to be set:
-
-
-+ `INFLUXDB_HOST`: Defaults to **0.0.0.0**
-+ `INFLUXDB_PORT`: Defaults to **8086**
-+ `INFLUXDB_DB`: Defaults to **metrics**
-+ `INFLUXDB_USER`: Defaults to **admin**
-+ `INFLUXDB_USER_PASSWORD`: Defaults to **admin123**
-
-## Drop measurement
-
-```
-c = Grafane(metric='test')
-c.drop_measurement() # Drops test from influxdb
-```
-## Write
-
-With:
-
-```python
-points = [
-    {
-        'fields': {
-            'value': 1.2,
-            'value2': 1.3,
-        },
-        'tags': {
-            'tag1': 'value1',
-                    'tag2': 'value2'
-        }
-    },
-    {
-        'fields': {
-            'value': 1.86,
-            'value2': 2.3,
-        },
-        'tags': {
-            'tag1': 'value2',
-                    'tag2': 'value1'
-        }
-    },
-    {
-        'fields': {
-            'value': 1.4,
-            'value2': 1.1,
-        },
-        'tags': {
-            'tag1': 'value3',
-                    'tag2': 'value2'
-        }
-    },
-    {
-        'fields': {
-            'value': 1.8,
-            'value2': 1.95,
-        },
-        'tags': {
-            'tag1': 'value1',
-                    'tag2': 'value2'
-        }
-    },
-]
+```bash
+poetry add grafane
 ```
 
-You can do either do multiple single queries:
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `INFLUXDB_HOST` | `0.0.0.0` | InfluxDB host |
+| `INFLUXDB_PORT` | `8086` | InfluxDB port |
+| `INFLUXDB_DB` | `metrics` | Database name |
+| `INFLUXDB_USER` | `admin` | Username |
+| `INFLUXDB_USER_PASSWORD` | `admin123` | Password |
+| `TESTING` | `0` | If set, appends `-testing` to metric names |
+
+## Quick Start
 
 ```python
 from grafane import Grafane
-c = Grafane(metric='generic') # Metric defaults to generic
-for p in points:
-	c.report(p['fields'], p['tags'])
+
+# Write
+c = Grafane(metric='temperature')
+c.report({'value': 23.5}, {'room': 'living'})
+
+# Read
+results = c.select(fields='value').filter_by('room', '=', 'living').execute_query()
 ```
 
-Or a single query with multiple points:
+## Write
+
+### report()
 
 ```python
-c.report_points(points)
+c.report(fields, tags, timestamp=False)
 ```
 
-if you don't provide `time` for a point it defaults to:
+### report_points()
 
 ```python
->>> datetime.utcnow().replace(tzinfo=pytz.utc)
-datetime.datetime(2019, 2, 8, 19, 32, 38, 788003, tzinfo=<UTC>)
+c.report_points([
+    {'fields': {'value': 1.2}, 'tags': {'tag1': 'a'}},
+    {'fields': {'value': 1.8}, 'tags': {'tag1': 'b'}},
+])
 ```
+
+If no timestamp is provided, defaults to `datetime.now(pytz.utc)`.
 
 ## Read
 
-### Select
+### Chainable Query API
 
-![](.docs/select.png)
+All query methods return `self` and can be chained:
 
 ```python
-In [6]: c.select(fields='value')                                                                                                                                                                            
-
-In [7]: c.execute_query()                                                                                                                                                                                   
-Out[7]: 
-[{'time': '2019-02-10T20:37:13.786477056Z', 'value': 1.2},
- {'time': '2019-02-10T20:37:13.786508032Z', 'value': 1.86},
- {'time': '2019-02-10T20:37:13.786518016Z', 'value': 1.4},
- {'time': '2019-02-10T20:37:13.786535936Z', 'value': 1.8}]
+results = (
+    c.select(fields=['value', 'value2'], aggregation='mean')
+    .filter_by('tag1', '=', 'value1')
+    .time_block('1h')
+    .fill_with('none')
+    .execute_query()
+)
 ```
 
-### Select multiple fields
-
-![](.docs/select_multiple.png)
+### select()
 
 ```python
-In [16]: c.select(fields=['value', 'value2'])                                                                                                                                                               
+# Single field
+c.select(fields='value')
 
-In [17]: c.execute_query()                                                                                                                                                                                  
-Out[17]: 
-[{'time': '2019-02-10T20:42:37.22864512Z', 'value': 1.2, 'value2': 1.3},
- {'time': '2019-02-10T20:42:37.228871936Z', 'value': 1.86, 'value2': 2.3},
- {'time': '2019-02-10T20:42:37.228883968Z', 'value': 1.4, 'value2': 1.1},
- {'time': '2019-02-10T20:42:37.22889216Z', 'value': 1.8, 'value2': 1.95}]
+# Multiple fields
+c.select(fields=['value', 'value2'])
+
+# With aggregation
+c.select(fields='value', aggregation='sum')
+
+# Multiple fields with different aggregations
+c.select(fields=['value', 'value2'], aggregation=['sum', 'mean'])
 ```
 
-### Select w/ aggregation
+### filter_by()
 
-![](.docs/select_w_aggregation.png)
+Filter by tag with an operator:
 
 ```python
-In [18]: c.select(fields='value', aggregation='sum')                                                                                                                                                        
-
-In [19]: c.execute_query()                                                                                                                                                                                  
-Out[19]: [{'time': '1970-01-01T00:00:00Z', 'sum': 6.26}]
-
+c.filter_by('tag1', '=', 'value1')
 ```
 
-### Select multiple fields w/ aggregation
+Supported operators: `=`, `!=`, `<`, `>`, `<=`, `>=`, `=~` (regex)
 
-![](.docs/select_multiple_w_aggregation.png)
+### filter_value_in()
+
+Match tags against multiple values:
 
 ```python
-In [20]: c.select(fields=['value', 'value2'], aggregation=['sum', 'mean'])                                                                                                                                  
-
-In [21]: c.execute_query()                                                                                                                                                                                  
-Out[21]: [{'time': '1970-01-01T00:00:00Z', 'sum': 6.26, 'mean': 1.6625}]
+c.filter_value_in('tag1', ['value1', 'value2'])
 ```
 
-### Group aggregated results in time blocks
-
-![](.docs/select_group_by_timeblock.png)
+### filter_time_range()
 
 ```python
-In [22]: c.select(fields=['value', 'value2'], aggregation=['sum', 'mean'])                                                                                                                                  
+from datetime import datetime
 
-In [23]: c.time_block('1m')                                                                                                                                                                                 
-
-In [24]: c.execute_query()                                                                                                                                                                                  
-Out[24]: 
-[{'time': '2019-02-10T20:42:00Z', 'sum': 6.26, 'mean': 1.6625},
- {'time': '2019-02-10T20:43:00Z', 'sum': None, 'mean': None},
- {'time': '2019-02-10T20:44:00Z', 'sum': None, 'mean': None},
- {'time': '2019-02-10T20:45:00Z', 'sum': None, 'mean': None},
- {'time': '2019-02-10T20:46:00Z', 'sum': None, 'mean': None},
- {'time': '2019-02-10T20:47:00Z', 'sum': None, 'mean': None}]
-```
- 
-When grouping time blocks, in order to avoid empty rows you need to fill results with **None**
-
-![](.docs/select_group_by_timeblock_filled_w_none.png)
-
-```python
-In [29]: c.select(fields=['value', 'value2'], aggregation=['sum', 'mean'])                                                                                                                                  
-
-In [30]: c.time_block('1m')                                                                                                                                                                                 
-
-In [31]: c.fill_with('none')                                                                                                                                                                                
-
-In [32]: c.execute_query()                                                                                                                                                                                  
-Out[32]: [{'time': '2019-02-10T20:42:00Z', 'sum': 6.26, 'mean': 1.6625}]
+time_range = (datetime(2024, 1, 1), datetime(2024, 1, 31))
+c.filter_time_range(time_range)
 ```
 
-### Group aggregated results by tag values
+Accepts tuple or list of datetime objects. Order doesn't matter.
 
-![](.docs/group_by.png)
+### time_block()
+
+Group results by time intervals:
 
 ```python
-In [34]: c.select(fields=['value', 'value2'], aggregation=['sum', 'mean'])                                                                                                                                  
-
-In [35]: c.group_by('tag1')                                                                                                                                                                                 
-
-In [36]: c.execute_query()                                                                                                                                                                                  
-Out[36]: 
-[{'tags': {'tag1': 'value1'},
-  'time': '1970-01-01T00:00:00Z',
-  'sum': 3,
-  'mean': 1.625},
- {'tags': {'tag1': 'value2'},
-  'time': '1970-01-01T00:00:00Z',
-  'sum': 1.86,
-  'mean': 2.3},
- {'tags': {'tag1': 'value3'},
-  'time': '1970-01-01T00:00:00Z',
-  'sum': 1.4,
-  'mean': 1.1}]  
+c.select(fields='value', aggregation='mean').time_block('1h')
 ```
 
-### Filter values by time range
+### fill_with()
+
+Fill empty time blocks:
 
 ```python
-In [6]: for i in range(len(points)): 
-   ...:     points[i]['time'] = datetime.now() - timedelta(hours=i+1) 
-In [7]: c.report_points(points)
+c.fill_with('none')
 ```
 
+Options: `none`, `null`, `0`, `previous`, `linear`
+
+### group_by()
+
+Group by tag values (requires aggregation):
+
 ```python
-In [14]: time_range = (datetime(2019, 2, 13, 9, 29, 39, 993719), datetime(2019, 2, 13, 6, 29, 39, 993908))
-
-In [15]: c.select(fields=['value', 'value2'])
-
-In [16]: c.filter_time_range(time_range)
-
-In [17]: c.execute_query()
-Out[17]: [{'time': '2019-02-13T09:29:39.99371904Z', 'value': 1.2, 'value2': 1.3}]
+c.select(fields='value', aggregation='sum').group_by('tag1')
 ```
 
-`filter_time_range` argument could be either a tuple or a list of datetime objects. Order doesn't matter.
-
-### Filter value in
-
-Match up tags agains multiple values:
+### Iteration, Length, and Boolean
 
 ```python
-In [28]: c.select(fields=['value', 'value2'], aggregation='sum')
+# Iterate directly
+for row in c.select(fields='value'):
+    print(row)
 
-In [29]: c.filter_value_in('tag1', ['value1', 'value2'])
+# Check result count
+count = len(c.select(fields='value'))
 
-In [30]: c.group_by('tag1')
+# Boolean check
+if c.select(fields='value').filter_by('tag1', '=', 'x'):
+    print("Has results")
+```
 
-In [31]: c.execute_query()
-Out[31]:
-[{'tags': {'tag1': 'value1'},
-  'time': '1970-01-01T00:00:00Z',
-  'sum': 15,
-  'sum_1': 16.25},
- {'tags': {'tag1': 'value2'},
-  'time': '1970-01-01T00:00:00Z',
-  'sum': 9.3,
-  'sum_1': 11.5}]
+## Drop Measurement
+
+```python
+c = Grafane(metric='test')
+c.drop_measurement()
+```
+
+## Development
+
+### Docker Setup
+
+Start services:
+
+```bash
+ahoy docker up
+```
+
+Services:
+- **metrics** (InfluxDB 1.8): http://localhost:8086
+- **grafana**: http://localhost:3000 (passwordless, admin access)
+
+### Jupyter Notebooks
+
+```bash
+ahoy notebooks run
+```
+
+Notebooks are stored in `.notebooks/` directory.
+
+### Environment Files
+
+Copy `.env.copy` to `.env`:
+
+```bash
+cp .env.copy .env
+```
+
+Contents:
+
+```bash
+INFLUXDB_DATA_ENGINE=tsm1
+INFLUXDB_DB=metrics
+INFLUXDB_USER=admin
+INFLUXDB_PASSWORD=admin123
 ```
