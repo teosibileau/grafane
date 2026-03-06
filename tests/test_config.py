@@ -409,3 +409,165 @@ INFLUXDB_SETTINGS = {
                 assert fresh_settings.TESTING is False
         finally:
             sys.path.remove(str(tmp_path))
+
+
+class TestV2SettingsValidation:
+    """Tests for InfluxDB v2 settings validation."""
+
+    def test_valid_v2_settings_passes(self, fresh_settings, tmp_path):
+        """Valid v2 settings pass validation."""
+        module_dir = tmp_path / "v2_settings_pkg"
+        module_dir.mkdir()
+        (module_dir / "__init__.py").write_text("")
+        settings_content = """
+INFLUXDB_SETTINGS = {
+    'default': {
+        'version': 2,
+        'url': 'http://localhost:8086',
+        'token': 'my-token',
+        'org': 'my-org',
+        'bucket': 'my-bucket',
+        'metrics': [],
+    },
+}
+"""
+        (module_dir / "v2_settings.py").write_text(settings_content)
+
+        sys.path.insert(0, str(tmp_path))
+        try:
+            fresh_settings.configure("v2_settings_pkg.v2_settings")
+            assert fresh_settings.configured is True
+            assert "default" in fresh_settings.INFLUXDB_SETTINGS
+        finally:
+            sys.path.remove(str(tmp_path))
+
+    def test_v2_missing_required_keys_raises(self, fresh_settings, tmp_path):
+        """V2 config missing url/token/org/bucket raises error."""
+        module_dir = tmp_path / "v2_incomplete_pkg"
+        module_dir.mkdir()
+        (module_dir / "__init__.py").write_text("")
+        settings_content = """
+INFLUXDB_SETTINGS = {
+    'default': {
+        'version': 2,
+        'url': 'http://localhost:8086',
+        # missing: token, org, bucket
+    },
+}
+"""
+        (module_dir / "v2_incomplete.py").write_text(settings_content)
+
+        sys.path.insert(0, str(tmp_path))
+        try:
+            with pytest.raises(MissingInfluxDBSettings) as exc_info:
+                fresh_settings.configure("v2_incomplete_pkg.v2_incomplete")
+            assert "missing required keys" in str(exc_info.value)
+            assert "token" in str(exc_info.value)
+            assert "org" in str(exc_info.value)
+            assert "bucket" in str(exc_info.value)
+        finally:
+            sys.path.remove(str(tmp_path))
+
+    def test_v2_missing_token_raises(self, fresh_settings, tmp_path):
+        """V2 config missing token raises error."""
+        module_dir = tmp_path / "v2_no_token_pkg"
+        module_dir.mkdir()
+        (module_dir / "__init__.py").write_text("")
+        settings_content = """
+INFLUXDB_SETTINGS = {
+    'default': {
+        'version': 2,
+        'url': 'http://localhost:8086',
+        'org': 'my-org',
+        'bucket': 'my-bucket',
+    },
+}
+"""
+        (module_dir / "v2_no_token.py").write_text(settings_content)
+
+        sys.path.insert(0, str(tmp_path))
+        try:
+            with pytest.raises(MissingInfluxDBSettings) as exc_info:
+                fresh_settings.configure("v2_no_token_pkg.v2_no_token")
+            assert "missing required keys" in str(exc_info.value)
+            assert "token" in str(exc_info.value)
+        finally:
+            sys.path.remove(str(tmp_path))
+
+    def test_mixed_v1_v2_settings_passes(self, fresh_settings, tmp_path):
+        """Mixed v1 and v2 databases pass validation."""
+        module_dir = tmp_path / "mixed_versions_pkg"
+        module_dir.mkdir()
+        (module_dir / "__init__.py").write_text("")
+        settings_content = """
+INFLUXDB_SETTINGS = {
+    'legacy': {
+        'version': 1,
+        'host': 'localhost',
+        'port': 8086,
+        'database': 'metrics_v1',
+        'username': 'admin',
+        'password': 'secret',
+        'metrics': ['cpu', 'memory'],
+    },
+    'modern': {
+        'version': 2,
+        'url': 'http://localhost:8086',
+        'token': 'my-token',
+        'org': 'my-org',
+        'bucket': 'metrics_v2',
+        'metrics': ['events', 'traces'],
+    },
+    'fallback': {
+        'version': 1,
+        'host': 'localhost',
+        'port': 8086,
+        'database': 'default',
+        'username': 'admin',
+        'password': 'secret',
+        'metrics': [],  # Empty = fallback
+    },
+}
+"""
+        (module_dir / "mixed_versions.py").write_text(settings_content)
+
+        sys.path.insert(0, str(tmp_path))
+        try:
+            fresh_settings.configure("mixed_versions_pkg.mixed_versions")
+            assert fresh_settings.configured is True
+            assert "legacy" in fresh_settings.INFLUXDB_SETTINGS
+            assert "modern" in fresh_settings.INFLUXDB_SETTINGS
+            assert "fallback" in fresh_settings.INFLUXDB_SETTINGS
+        finally:
+            sys.path.remove(str(tmp_path))
+
+    def test_v2_with_metrics_list(self, fresh_settings, tmp_path):
+        """V2 settings with metrics list pass validation."""
+        module_dir = tmp_path / "v2_with_metrics_pkg"
+        module_dir.mkdir()
+        (module_dir / "__init__.py").write_text("")
+        settings_content = """
+INFLUXDB_SETTINGS = {
+    'v2_db': {
+        'version': 2,
+        'url': 'http://localhost:8086',
+        'token': 'my-token',
+        'org': 'my-org',
+        'bucket': 'my-bucket',
+        'metrics': ['page_views', 'sessions', 'events'],
+    },
+}
+"""
+        (module_dir / "v2_with_metrics.py").write_text(settings_content)
+
+        sys.path.insert(0, str(tmp_path))
+        try:
+            fresh_settings.configure("v2_with_metrics_pkg.v2_with_metrics")
+            assert fresh_settings.configured is True
+            assert fresh_settings.INFLUXDB_SETTINGS["v2_db"]["metrics"] == [
+                "page_views",
+                "sessions",
+                "events",
+            ]
+        finally:
+            sys.path.remove(str(tmp_path))

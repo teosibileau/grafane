@@ -47,6 +47,9 @@ DEFAULT_SETTINGS_MODULE = "grafane.settings"
 # Required keys for each database configuration
 REQUIRED_DB_KEYS = {"host", "port", "database", "username", "password"}
 
+# Required keys for InfluxDB v2 database configuration
+REQUIRED_V2_KEYS = {"url", "token", "org", "bucket"}
+
 # Subscribable settings (can be overridden by user settings)
 SUBSCRIBABLE_SETTINGS = {"INFLUXDB_SETTINGS"}
 
@@ -79,17 +82,29 @@ class Settings:
             )
             return errors
 
-        missing_keys = REQUIRED_DB_KEYS - set(config.keys())
-        if missing_keys:
-            errors.append(
-                f"Database '{name}' missing required keys: {', '.join(sorted(missing_keys))}"
-            )
+        # Determine version (default to v1)
+        version = config.get("version", 1)
 
-        # Validate types
-        if "port" in config and not isinstance(config["port"], int):
-            errors.append(
-                f"Database '{name}' port must be an int, got {type(config['port']).__name__}"
-            )
+        if version == 2:
+            # Validate v2 configuration
+            missing_keys = REQUIRED_V2_KEYS - set(config.keys())
+            if missing_keys:
+                errors.append(
+                    f"Database '{name}' (v2) missing required keys: {', '.join(sorted(missing_keys))}"
+                )
+        else:
+            # Validate v1 configuration
+            missing_keys = REQUIRED_DB_KEYS - set(config.keys())
+            if missing_keys:
+                errors.append(
+                    f"Database '{name}' missing required keys: {', '.join(sorted(missing_keys))}"
+                )
+
+            # Validate types for v1
+            if "port" in config and not isinstance(config["port"], int):
+                errors.append(
+                    f"Database '{name}' port must be an int, got {type(config['port']).__name__}"
+                )
 
         if "metrics" in config and not isinstance(config["metrics"], list):
             errors.append(
