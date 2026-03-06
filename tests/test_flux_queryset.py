@@ -227,14 +227,14 @@ class TestFluxQuerySetFilterValueIn:
         qs = FluxQuerySet("cpu", bucket="metrics")
         qs.select().filter_value_in("host", ["server1"])
 
-        assert any("in [" in f for f in qs.filter)
+        assert any("contains(" in f and '"server1"' in f for f in qs.filter)
 
     def test_filter_value_in_multiple(self):
         """Test filter_value_in with multiple values."""
         qs = FluxQuerySet("cpu", bucket="metrics")
         qs.select().filter_value_in("host", ["server1", "server2", "server3"])
 
-        assert any("in [" in f for f in qs.filter)
+        assert any("contains(" in f and "set:" in f for f in qs.filter)
 
 
 class TestFluxQuerySetQuery:
