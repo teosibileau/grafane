@@ -2,10 +2,11 @@ import copy
 import time
 import warnings
 
+from .base import BaseQuerySet
 from .exceptions import WrongArgumentType
 
 
-class InfluxQLQuerySet:
+class InfluxQLQuerySet(BaseQuerySet):
     """Builds InfluxQL query strings and parses results."""
 
     def __init__(self, metric: str):
