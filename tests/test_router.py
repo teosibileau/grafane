@@ -116,9 +116,9 @@ class TestRouterGetClient:
     """Tests for Router.get_client method."""
 
     def test_get_client_creates_client(self, configured_settings):
-        """get_client creates an InfluxDBClient."""
+        """get_client creates an InfluxDBClientV1."""
         r = Router()
-        with patch("grafane.router.InfluxDBClient") as mock_client:
+        with patch("grafane.router.InfluxDBClientV1") as mock_client:
             mock_instance = MagicMock()
             mock_client.return_value = mock_instance
 
@@ -130,7 +130,7 @@ class TestRouterGetClient:
     def test_get_client_caches_client(self, configured_settings):
         """get_client caches and reuses clients."""
         r = Router()
-        with patch("grafane.router.InfluxDBClient") as mock_client:
+        with patch("grafane.router.InfluxDBClientV1") as mock_client:
             mock_instance = MagicMock()
             mock_client.return_value = mock_instance
 
@@ -153,7 +153,7 @@ class TestRouterGetClientForMetric:
     def test_get_client_for_metric_returns_tuple(self, configured_settings):
         """get_client_for_metric returns (client, db_name) tuple."""
         r = Router()
-        with patch("grafane.router.InfluxDBClient") as mock_client:
+        with patch("grafane.router.InfluxDBClientV1") as mock_client:
             mock_instance = MagicMock()
             mock_client.return_value = mock_instance
 
@@ -165,7 +165,7 @@ class TestRouterGetClientForMetric:
     def test_get_client_for_metric_with_explicit_db(self, multi_db_settings):
         """get_client_for_metric with explicit db uses that database."""
         r = Router()
-        with patch("grafane.router.InfluxDBClient") as mock_client:
+        with patch("grafane.router.InfluxDBClientV1") as mock_client:
             mock_instance = MagicMock()
             mock_client.return_value = mock_instance
 
@@ -180,7 +180,7 @@ class TestRouterCacheManagement:
     def test_clear_cache(self, configured_settings):
         """clear_cache removes all cached clients."""
         r = Router()
-        with patch("grafane.router.InfluxDBClient") as mock_client:
+        with patch("grafane.router.InfluxDBClientV1") as mock_client:
             mock_client.return_value = MagicMock()
 
             r.get_client("default")
@@ -192,7 +192,7 @@ class TestRouterCacheManagement:
     def test_cached_databases_property(self, configured_settings):
         """cached_databases returns list of cached database names."""
         r = Router()
-        with patch("grafane.router.InfluxDBClient") as mock_client:
+        with patch("grafane.router.InfluxDBClientV1") as mock_client:
             mock_client.return_value = MagicMock()
 
             assert r.cached_databases == []

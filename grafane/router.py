@@ -14,11 +14,12 @@ Router behavior:
 import logging
 from typing import TYPE_CHECKING
 
-from influxdb import InfluxDBClient
+from influxdb import InfluxDBClient as InfluxDBClientV1
 
 from .config import settings
 from .exceptions import (
     DatabaseNotFoundError,
+    InfluxDBV2NotInstalled,
     MetricNotFoundError,
     MultipleConfigError,
 )
@@ -27,6 +28,22 @@ if TYPE_CHECKING:
     from typing import Any
 
 logger = logging.getLogger("grafane")
+
+# Lazy import for v2 client
+InfluxDBClientV2 = None
+
+
+def _get_v2_client():
+    """Lazy import and return InfluxDB v2 client class."""
+    global InfluxDBClientV2
+    if InfluxDBClientV2 is None:
+        try:
+            from influxdb_client import InfluxDBClient
+
+            InfluxDBClientV2 = InfluxDBClient
+        except ImportError:
+            raise InfluxDBV2NotInstalled()
+    return InfluxDBClientV2
 
 
 class Router:
@@ -37,25 +54,41 @@ class Router:
     """
 
     def __init__(self):
-        self._client_cache: dict[str, InfluxDBClient] = {}
+        self._client_cache: dict[str, "Any"] = {}
 
     @property
     def influxdb_settings(self) -> dict[str, "Any"]:
         """Get the INFLUXDB_SETTINGS from config."""
         return settings.INFLUXDB_SETTINGS
 
-    def _create_client(self, db_name: str, db_config: dict) -> InfluxDBClient:
-        """Create an InfluxDBClient for a database configuration."""
-        return InfluxDBClient(
-            host=db_config["host"],
-            port=db_config["port"],
-            username=db_config["username"],
-            password=db_config["password"],
-            database=db_config["database"],
-            ssl=db_config.get("ssl", False),
-        )
+    def _get_version(self, db_config: dict) -> int:
+        """Get the InfluxDB version from config (default: 1)."""
+        return db_config.get("version", 1)
 
-    def get_client(self, db_name: str) -> InfluxDBClient:
+    def _create_client(self, db_name: str, db_config: dict) -> "Any":
+        """Create an InfluxDBClient for a database configuration."""
+        version = self._get_version(db_config)
+
+        if version == 1:
+            return InfluxDBClientV1(
+                host=db_config["host"],
+                port=db_config["port"],
+                username=db_config["username"],
+                password=db_config["password"],
+                database=db_config["database"],
+                ssl=db_config.get("ssl", False),
+            )
+        elif version == 2:
+            v2_client = _get_v2_client()
+            return v2_client(
+                url=db_config["url"],
+                token=db_config["token"],
+                org=db_config["org"],
+            )
+        else:
+            raise ValueError(f"Unsupported InfluxDB version: {version}")
+
+    def get_client(self, db_name: str) -> "Any":
         """Get an InfluxDBClient for a database by name.
 
         Args:
@@ -162,7 +195,7 @@ class Router:
 
     def get_client_for_metric(
         self, metric: str, db: str | None = None
-    ) -> tuple[InfluxDBClient, str]:
+    ) -> tuple["Any", str]:
         """Get an InfluxDBClient for a metric.
 
         This is the main entry point for getting a client for a metric.
