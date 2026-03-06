@@ -11,10 +11,6 @@ stages:
   script:
     - poetry run pytest tests -m "not integration"
 
-unit:3.10:
-  extends: .unit_template
-  image: python:3.10
-
 unit:3.11:
   extends: .unit_template
   image: python:3.11
