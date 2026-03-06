@@ -123,6 +123,8 @@ INFLUXDB_SETTINGS = {
 
 ### InfluxDB v2 Support
 
+> **Note:** Python 3.9 and 3.10 support were dropped to prepare for the InfluxDB v2 client. Grafane 1.0.0 still supports Python 3.9+.
+
 Grafane supports InfluxDB v2 with the same API. Install the v2 client:
 
 ```bash
