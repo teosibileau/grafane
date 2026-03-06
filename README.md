@@ -121,6 +121,68 @@ INFLUXDB_SETTINGS = {
 | `password` | str | Yes | Password |
 | `metrics` | list | No | Metrics routed to this database (empty = fallback) |
 
+### InfluxDB v2 Support
+
+Grafane supports InfluxDB v2 with the same API. Install the v2 client:
+
+```bash
+pip install grafane[v2]
+# or
+poetry add grafane --extras v2
+```
+
+Configure v2 databases in your settings module:
+
+```python
+# myproject/settings.py
+INFLUXDB_SETTINGS = {
+    'default': {
+        'version': 2,
+        'url': 'http://localhost:8086',
+        'token': 'my-api-token',
+        'org': 'my-org',
+        'bucket': 'my-bucket',
+        'metrics': [],
+    },
+}
+```
+
+**v2 Configuration Keys:**
+
+| Key | Type | Required | Description |
+|-----|------|----------|-------------|
+| `version` | int | Yes | Set to `2` for InfluxDB v2 |
+| `url` | str | Yes | InfluxDB v2 URL |
+| `token` | str | Yes | API token |
+| `org` | str | Yes | Organization |
+| `bucket` | str | Yes | Bucket name |
+| `metrics` | list | No | Metrics routed to this bucket (empty = fallback) |
+
+**Mixed v1/v2 Setup:**
+
+You can configure both v1 and v2 databases in the same settings:
+
+```python
+INFLUXDB_SETTINGS = {
+    'legacy': {
+        'host': 'localhost',
+        'port': 8086,
+        'database': 'metrics_v1',
+        'username': 'admin',
+        'password': 'secret',
+        'metrics': ['cpu', 'memory'],
+    },
+    'modern': {
+        'version': 2,
+        'url': 'http://localhost:8086',
+        'token': 'my-token',
+        'org': 'my-org',
+        'bucket': 'metrics_v2',
+        'metrics': ['events', 'traces'],
+    },
+}
+```
+
 ### Metric Routing
 
 Grafane automatically routes metrics to the correct database based on the `metrics` list:
