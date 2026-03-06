@@ -1,10 +1,13 @@
-import pytz
 import copy
 import functools
 from datetime import datetime
-from .settings import INFLUXDB_SETTINGS, TESTING
-from .querysets import InfluxQLQuerySet
+
+import pytz
 from influxdb import InfluxDBClient
+
+from .exceptions import MissingInfluxDBSettings
+from .querysets import InfluxQLQuerySet
+from .settings import INFLUXDB_SETTINGS, TESTING
 
 
 def cache_invalidation(func):
@@ -17,12 +20,6 @@ def cache_invalidation(func):
         return func(self, *args, **kwargs)
 
     return wrapper
-
-
-class MissingInfluxDBSettings(Exception):
-    def __init__(self, message, errors):
-        super(MissingInfluxDBSettings, self).__init__(message)
-        self.errors = errors
 
 
 class Grafane:
