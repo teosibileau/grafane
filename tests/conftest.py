@@ -1,9 +1,19 @@
 """Shared pytest fixtures for Grafane tests."""
 
+import os
+import sys
+from pathlib import Path
+
 import pytest
+from dotenv import load_dotenv
 
 from grafane.config import settings
 from grafane.router import router
+
+# Load .env file from project root
+_env_path = Path(__file__).parent.parent / ".env"
+if _env_path.exists():
+    load_dotenv(_env_path)
 
 
 @pytest.fixture(autouse=True)
@@ -161,6 +171,126 @@ INFLUXDB_SETTINGS = {
     sys.path.insert(0, str(tmp_path))
     try:
         settings.configure("no_fallback_settings_pkg.settings")
+        yield settings
+    finally:
+        sys.path.remove(str(tmp_path))
+        settings.reset()
+        router.clear_cache()
+
+
+def pytest_configure(config):
+    """Configure pytest markers."""
+    config.addinivalue_line(
+        "markers",
+        "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
+    )
+    config.addinivalue_line("markers", "v2: marks tests requiring InfluxDB v2")
+
+
+@pytest.fixture
+def v2_settings(tmp_path):
+    """Create settings for InfluxDB v2 using metrics-v2 compose service.
+
+    Uses environment variables from .env file:
+    - INFLUXDB_V2_URL (default: http://localhost:8087)
+    - INFLUXDB_V2_TOKEN
+    - INFLUXDB_V2_ORG
+    - INFLUXDB_V2_BUCKET
+
+    Requires: docker-compose up metrics-v2
+    """
+    module_dir = tmp_path / "v2_settings_pkg"
+    module_dir.mkdir()
+    (module_dir / "__init__.py").write_text("")
+
+    v2_url = os.environ.get("INFLUXDB_V2_URL", "http://localhost:8087")
+    v2_token = os.environ.get("INFLUXDB_V2_TOKEN", "my-super-secret-token")
+    v2_org = os.environ.get("INFLUXDB_V2_ORG", "my-org")
+    v2_bucket = os.environ.get("INFLUXDB_V2_BUCKET", "metrics")
+
+    settings_content = f"""
+INFLUXDB_SETTINGS = {{
+    'default': {{
+        'version': 2,
+        'url': '{v2_url}',
+        'token': '{v2_token}',
+        'org': '{v2_org}',
+        'bucket': '{v2_bucket}',
+        'metrics': [],
+    }},
+}}
+"""
+    (module_dir / "settings.py").write_text(settings_content)
+
+    sys.path.insert(0, str(tmp_path))
+    try:
+        settings.configure("v2_settings_pkg.settings")
+        yield settings
+    finally:
+        sys.path.remove(str(tmp_path))
+        settings.reset()
+        router.clear_cache()
+
+
+@pytest.fixture
+def mixed_v1_v2_settings(tmp_path):
+    """Create settings with both v1 and v2 databases.
+
+    - v1: metrics compose service (port 8086)
+    - v2: metrics-v2 compose service (port 8087)
+
+    Requires: docker-compose up metrics metrics-v2
+    """
+    module_dir = tmp_path / "mixed_settings_pkg"
+    module_dir.mkdir()
+    (module_dir / "__init__.py").write_text("")
+
+    v1_host = os.environ.get("INFLUXDB_HOST", "localhost")
+    v1_port = os.environ.get("INFLUXDB_PORT", "8086")
+    v1_db = os.environ.get("INFLUXDB_DB", "metrics")
+    v1_user = os.environ.get("INFLUXDB_USER", "admin")
+    v1_pass = os.environ.get("INFLUXDB_PASSWORD", "admin123")
+
+    v2_url = os.environ.get("INFLUXDB_V2_URL", "http://localhost:8087")
+    v2_token = os.environ.get("INFLUXDB_V2_TOKEN", "my-super-secret-token")
+    v2_org = os.environ.get("INFLUXDB_V2_ORG", "my-org")
+    v2_bucket = os.environ.get("INFLUXDB_V2_BUCKET", "metrics")
+
+    settings_content = f"""
+INFLUXDB_SETTINGS = {{
+    'legacy': {{
+        'version': 1,
+        'host': '{v1_host}',
+        'port': {v1_port},
+        'database': '{v1_db}',
+        'username': '{v1_user}',
+        'password': '{v1_pass}',
+        'metrics': ['cpu', 'memory', 'disk'],
+    }},
+    'modern': {{
+        'version': 2,
+        'url': '{v2_url}',
+        'token': '{v2_token}',
+        'org': '{v2_org}',
+        'bucket': '{v2_bucket}',
+        'metrics': ['events', 'traces'],
+    }},
+    'default': {{
+        'version': 1,
+        'host': '{v1_host}',
+        'port': {v1_port},
+        'database': '{v1_db}',
+        'username': '{v1_user}',
+        'password': '{v1_pass}',
+        'metrics': [],
+    }},
+}}
+"""
+    (module_dir / "settings.py").write_text(settings_content)
+
+    sys.path.insert(0, str(tmp_path))
+    try:
+        settings.configure("mixed_settings_pkg.settings")
         yield settings
     finally:
         sys.path.remove(str(tmp_path))

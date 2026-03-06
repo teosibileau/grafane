@@ -3,9 +3,11 @@ from .config import configure, settings  # noqa
 from .exceptions import (  # noqa
     DatabaseNotFoundError,
     GrafaneError,
+    InfluxDBV2NotInstalled,
     MetricNotFoundError,
     MissingInfluxDBSettings,
     MultipleConfigError,
+    UnsupportedOperationError,
 )
-from .querysets import InfluxQLQuerySet, WrongArgumentType  # noqa
+from .querysets import BaseQuerySet, FluxQuerySet, InfluxQLQuerySet, WrongArgumentType  # noqa
 from .router import Router, router  # noqa

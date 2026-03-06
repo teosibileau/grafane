@@ -7,15 +7,15 @@ import copy
 import functools
 from datetime import datetime
 from typing import TYPE_CHECKING
-
+from influxdb_client.client.write_api import SYNCHRONOUS
 import pytz
 
 from .config import settings
-from .querysets import InfluxQLQuerySet
+from .querysets import FluxQuerySet, InfluxQLQuerySet
 from .router import router
 
 if TYPE_CHECKING:
-    from influxdb import InfluxDBClient
+    pass
 
 
 def cache_invalidation(func):
@@ -63,8 +63,11 @@ class Grafane:
         self.uuid = settings.UUID
 
         # Get the appropriate InfluxDB client via router
-        self._client: "InfluxDBClient"
         self._client, self._db_name = router.get_client_for_metric(metric, db)
+
+        # Get version from database config
+        db_config = router.influxdb_settings[self._db_name]
+        self._version = db_config.get("version", 1)
 
         # Store the original metric name
         self._original_metric = metric
@@ -74,7 +77,13 @@ class Grafane:
         if settings.TESTING:
             self.metric = f"{metric}-testing"
 
-        self._queryset = InfluxQLQuerySet(self.metric)
+        # Select appropriate queryset based on version
+        if self._version == 1:
+            self._queryset = InfluxQLQuerySet(self.metric)
+        else:
+            bucket = db_config.get("bucket", "metrics")
+            self._queryset = FluxQuerySet(self.metric, bucket=bucket)
+
         self._results: list | None = None
         self._executed = False
 
@@ -221,7 +230,14 @@ class Grafane:
         if uuid:
             self._queryset.filter_by("origin", "=", uuid)
 
-        raw_results = self._client.query(self._queryset.query)
+        if self._version == 1:
+            raw_results = self._client.query(self._queryset.query)
+        else:
+            db_config = router.influxdb_settings[self._db_name]
+            query_api = self._client.query_api()
+            org = db_config.get("org", "my-org")
+            raw_results = query_api.query(org=org, query=self._queryset.query)
+
         self._results = self._queryset.parse_results(raw_results)
         self._executed = True
         return self._results
@@ -315,7 +331,17 @@ class Grafane:
                 p["measurement"] = self.metric
             points[i] = p
         if len(points):
-            r = self._client.write_points(points)
+            if self._version == 1:
+                r = self._client.write_points(points)
+            else:
+                db_config = router.influxdb_settings[self._db_name]
+                bucket = db_config.get("bucket", "metrics")
+                org = db_config.get("org", "my-org")
+
+                write_api = self._client.write_api(write_options=SYNCHRONOUS)
+
+                write_api.write(bucket=bucket, org=org, record=points)
+                r = True
             return r
         return False
 
@@ -327,7 +353,20 @@ class Grafane:
         """
         if not metric:
             metric = self.metric
-        self._client.drop_measurement(metric)
+
+        if self._version == 1:
+            self._client.drop_measurement(metric)
+        else:
+            db_config = router.influxdb_settings[self._db_name]
+            bucket = db_config.get("bucket", "metrics")
+            org = db_config.get("org", "my-org")
+            delete_api = self._client.delete_api()
+            from datetime import datetime, timezone
+
+            start = datetime(1970, 1, 1, tzinfo=timezone.utc)
+            stop = datetime.now(timezone.utc)
+            predicate = f'_measurement="{metric}"'
+            delete_api.delete(start, stop, predicate, bucket=bucket, org=org)
 
     # === Iteration ===
     def __iter__(self):

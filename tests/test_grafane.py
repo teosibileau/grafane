@@ -56,7 +56,7 @@ def client(configured_settings):
     Uses the configured_settings fixture from conftest.py to ensure
     settings are properly configured before creating the client.
     """
-    with patch("grafane.router.InfluxDBClient") as mock_influx:
+    with patch("grafane.router.InfluxDBClientV1") as mock_influx:
         mock_client = MagicMock()
         mock_influx.return_value = mock_client
 
@@ -377,7 +377,7 @@ class TestGrafaneClientProperties:
 
     def test_metric_stored(self, configured_settings):
         """Metric name is stored on client."""
-        with patch("grafane.router.InfluxDBClient"):
+        with patch("grafane.router.InfluxDBClientV1"):
             client = Grafane("my_metric")
             assert client._original_metric == "my_metric"
             assert client.metric == "my_metric"
@@ -388,6 +388,6 @@ class TestGrafaneWithExplicitDb:
 
     def test_explicit_db_parameter(self, configured_settings):
         """Client can be created with explicit db parameter."""
-        with patch("grafane.router.InfluxDBClient"):
+        with patch("grafane.router.InfluxDBClientV1"):
             client = Grafane("any_metric", db="default")
             assert client.database_name == "default"
