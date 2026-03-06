@@ -5,9 +5,11 @@ import pytest
 from grafane.exceptions import (
     DatabaseNotFoundError,
     GrafaneError,
+    InfluxDBV2NotInstalled,
     MetricNotFoundError,
     MissingInfluxDBSettings,
     MultipleConfigError,
+    UnsupportedOperationError,
 )
 
 
@@ -122,6 +124,58 @@ class TestDatabaseNotFoundError:
             raise DatabaseNotFoundError("test")
 
 
+class TestInfluxDBV2NotInstalled:
+    """Tests for InfluxDBV2NotInstalled exception."""
+
+    def test_inherits_from_grafane_error(self):
+        """InfluxDBV2NotInstalled should inherit from GrafaneError."""
+        assert issubclass(InfluxDBV2NotInstalled, GrafaneError)
+
+    def test_default_message(self):
+        """Default message should mention pip install grafane[v2]."""
+        with pytest.raises(InfluxDBV2NotInstalled) as exc_info:
+            raise InfluxDBV2NotInstalled()
+        assert "pip install grafane[v2]" in str(exc_info.value)
+
+    def test_custom_message(self):
+        """Can provide custom message."""
+        with pytest.raises(InfluxDBV2NotInstalled) as exc_info:
+            raise InfluxDBV2NotInstalled("custom error message")
+        assert str(exc_info.value) == "custom error message"
+
+    def test_catchable_as_grafane_error(self):
+        """InfluxDBV2NotInstalled can be caught as GrafaneError."""
+        with pytest.raises(GrafaneError):
+            raise InfluxDBV2NotInstalled()
+
+
+class TestUnsupportedOperationError:
+    """Tests for UnsupportedOperationError exception."""
+
+    def test_inherits_from_grafane_error(self):
+        """UnsupportedOperationError should inherit from GrafaneError."""
+        assert issubclass(UnsupportedOperationError, GrafaneError)
+
+    def test_message_and_version(self):
+        """Stores version attribute when provided."""
+        with pytest.raises(UnsupportedOperationError) as exc_info:
+            raise UnsupportedOperationError("operation not supported", version=2)
+        assert str(exc_info.value) == "operation not supported"
+        assert exc_info.value.version == 2
+
+    def test_message_only(self):
+        """Works without version."""
+        with pytest.raises(UnsupportedOperationError) as exc_info:
+            raise UnsupportedOperationError("operation not supported")
+        assert str(exc_info.value) == "operation not supported"
+        assert exc_info.value.version is None
+
+    def test_catchable_as_grafane_error(self):
+        """UnsupportedOperationError can be caught as GrafaneError."""
+        with pytest.raises(GrafaneError):
+            raise UnsupportedOperationError("test")
+
+
 class TestExceptionHierarchy:
     """Tests for the exception class hierarchy."""
 
@@ -132,6 +186,8 @@ class TestExceptionHierarchy:
             MetricNotFoundError,
             MultipleConfigError,
             DatabaseNotFoundError,
+            InfluxDBV2NotInstalled,
+            UnsupportedOperationError,
         ]
         for exc_class in exceptions:
             assert issubclass(
@@ -145,6 +201,8 @@ class TestExceptionHierarchy:
             MetricNotFoundError("test"),
             MultipleConfigError("test"),
             DatabaseNotFoundError("test"),
+            InfluxDBV2NotInstalled("test"),
+            UnsupportedOperationError("test"),
         ]
 
         for exc in exceptions_to_test:

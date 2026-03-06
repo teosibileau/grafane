@@ -33,3 +33,23 @@ class DatabaseNotFoundError(GrafaneError):
     """Raised when an explicit database name is not found in settings."""
 
     pass
+
+
+class InfluxDBV2NotInstalled(GrafaneError):
+    """Raised when InfluxDB v2 client is required but not installed."""
+
+    def __init__(self, message=None):
+        if message is None:
+            message = (
+                "InfluxDB v2 client requires 'influxdb-client' package. "
+                "Install with: pip install grafane[v2]"
+            )
+        super().__init__(message)
+
+
+class UnsupportedOperationError(GrafaneError):
+    """Raised when an operation is not supported for a specific InfluxDB version."""
+
+    def __init__(self, message, version=None):
+        super().__init__(message)
+        self.version = version
