@@ -184,6 +184,7 @@ def pytest_configure(config):
         "markers",
         "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
     )
+    config.addinivalue_line("markers", "v1: marks tests requiring InfluxDB v1")
     config.addinivalue_line("markers", "v2: marks tests requiring InfluxDB v2")
 
 

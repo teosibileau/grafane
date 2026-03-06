@@ -51,5 +51,6 @@ filterwarnings = [
 ]
 markers = [
     "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
+    "v1: marks tests requiring InfluxDB v1",
     "v2: marks tests requiring InfluxDB v2",
 ]
