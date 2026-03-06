@@ -1,0 +1,12 @@
+apiVersion: 1
+datasources:
+  - name: InfluxDB-v2
+    type: influxdb
+    access: proxy
+    url: http://metrics-v2:8086
+    jsonData:
+      version: Flux
+      organization: ${INFLUXDB_V2_ORG}
+      defaultBucket: ${INFLUXDB_V2_BUCKET}
+    secureJsonData:
+      token: ${INFLUXDB_V2_TOKEN}
