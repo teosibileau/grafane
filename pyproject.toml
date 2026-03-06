@@ -23,6 +23,9 @@ python = "^3.10"
 influxdb = "5.2.1"
 pytz = "*"
 
+[tool.poetry.extras]
+v2 = ["influxdb-client"]
+
 [tool.poetry.group.dev.dependencies]
 freezegun = "*"
 pycodestyle = "*"
@@ -44,4 +47,8 @@ grafane = "grafane.client:Grafane"
 filterwarnings = [
     "ignore::DeprecationWarning:influxdb.*",
     "ignore::DeprecationWarning:pytest_freezegun.*",
+]
+markers = [
+    "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
+    "v2: marks tests requiring InfluxDB v2",
 ]

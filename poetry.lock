@@ -3116,7 +3116,10 @@ websockets = ">=13.0"
 nospam = ["requests_cache (>=1.0)", "requests_ratelimiter (>=0.3.1)"]
 repair = ["scipy (>=1.6.3)"]
 
+[extras]
+v2 = []
+
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10"
-content-hash = "d4c323ba861bed1664b243b286959ef636a12ae7fea7b002810f8e57ff52712b"
+content-hash = "2390079c18b26fc6f4593594778f25cd9056757ddff0fc51882fa69db8d4f8ff"
