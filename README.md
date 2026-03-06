@@ -10,7 +10,42 @@ A very opinionated InfluxDB client inspired by Grafana's query builder.
 poetry add grafane
 ```
 
-### Environment Variables
+### Configuration
+
+Grafane supports multi-database setups with a Django-style configuration system.
+
+**Recommended:** Create a settings module in your project:
+
+```python
+# myproject/settings.py
+INFLUXDB_SETTINGS = {
+    'default': {
+        'host': 'localhost',
+        'port': 8086,
+        'database': 'metrics',
+        'username': 'admin',
+        'password': 'secret',
+        'metrics': [],
+    },
+}
+```
+
+Then configure Grafane:
+
+```python
+import grafane
+grafane.configure('myproject.settings')
+```
+
+Alternatively, set the environment variable:
+
+```bash
+export GRAFANE_SETTINGS_MODULE=myproject.settings
+```
+
+### Environment Variables (Default Configuration)
+
+If no settings module is configured, Grafane uses these environment variables for a single default database:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -21,18 +56,97 @@ poetry add grafane
 | `INFLUXDB_USER_PASSWORD` | `admin123` | Password |
 | `TESTING` | `0` | If set, appends `-testing` to metric names |
 
+For multi-database setups, use a settings module instead (see Configuration above).
+
 ## Quick Start
 
 ```python
-from grafane import Grafane
+import grafane
+
+# Configure with your settings module (optional if using env vars)
+grafane.configure('myproject.settings')
+
+# Create a client for a metric
+c = grafane.Grafane(metric='temperature')
 
 # Write
-c = Grafane(metric='temperature')
 c.report({'value': 23.5}, {'room': 'living'})
 
 # Read
 results = c.select(fields='value').filter_by('room', '=', 'living').execute_query()
 ```
+
+## Multi-Database Setup
+
+Configure multiple InfluxDB databases in your settings module:
+
+```python
+# myproject/settings.py
+INFLUXDB_SETTINGS = {
+    'default': {
+        'host': 'localhost',
+        'port': 8086,
+        'database': 'metrics',
+        'username': 'admin',
+        'password': 'secret',
+        'metrics': [],  # Empty = fallback for unmatched metrics
+    },
+    'analytics': {
+        'host': 'analytics.example.com',
+        'port': 8086,
+        'database': 'analytics',
+        'username': 'analytics_user',
+        'password': 'analytics_pass',
+        'metrics': ['page_views', 'sessions', 'events'],
+    },
+    'monitoring': {
+        'host': 'monitoring.example.com',
+        'port': 8086,
+        'database': 'monitoring',
+        'username': 'monitoring_user',
+        'password': 'monitoring_pass',
+        'metrics': ['cpu', 'memory', 'disk'],
+    },
+}
+```
+
+### Database Configuration Keys
+
+| Key | Type | Required | Description |
+|-----|------|----------|-------------|
+| `host` | str | Yes | InfluxDB host |
+| `port` | int | Yes | InfluxDB port |
+| `database` | str | Yes | Database name |
+| `username` | str | Yes | Username |
+| `password` | str | Yes | Password |
+| `metrics` | list | No | Metrics routed to this database (empty = fallback) |
+
+### Metric Routing
+
+Grafane automatically routes metrics to the correct database based on the `metrics` list:
+
+```python
+from grafane import Grafane
+
+# Routes to 'analytics' (has 'page_views' in metrics list)
+c = Grafane('page_views')
+
+# Routes to 'monitoring' (has 'cpu' in metrics list)
+c = Grafane('cpu')
+
+# Routes to 'default' (fallback - empty metrics list)
+c = Grafane('unknown_metric')
+
+# Explicit database selection (bypasses routing)
+c = Grafane('any_metric', db='analytics')
+```
+
+**Routing rules:**
+1. If `db=` parameter is provided, use that database
+2. If metric is in exactly one database's `metrics` list, use that database
+3. If metric is in multiple databases' `metrics` lists, raises error (use `db=` to resolve)
+4. If metric is not found, use the fallback database (database with empty `metrics` list)
+5. If no fallback exists, raises error
 
 ## Write
 
