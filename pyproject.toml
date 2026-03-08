@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "grafane"
-version = "1.0.0"
+version = "2.0.0"
 description = "Opinionated InfluxDB client"
 authors = ["Teofilo Sibileau <teo.sibileau@gmail.com>"]
 readme = "README.md"
