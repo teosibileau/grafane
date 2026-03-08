@@ -1,12 +1,12 @@
 [tool.poetry]
 name = "grafane"
-version = "2.0.0"
+version = "2.0.1"
 description = "Opinionated InfluxDB client"
 authors = ["Teofilo Sibileau <teo.sibileau@gmail.com>"]
 readme = "README.md"
 license = "CC-BY-NC-SA-4.0"
-homepage = "https://gitlab.com/grafane/grafane"
-repository = "https://gitlab.com/grafane/grafane"
+homepage = "https://github.com/teosibileau/grafane"
+repository = "https://github.com/teosibileau/grafane"
 keywords = ["influxdb", "grafana", "metrics", "time-series"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
