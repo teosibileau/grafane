@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install poetry
+      - run: poetry install
+      - run: poetry run pytest tests -m "not integration"
+
+  integration-v1:
+    runs-on: ubuntu-latest
+    needs: [unit-tests]
+    services:
+      influxdb:
+        image: influxdb:1.8.10
+        ports:
+          - 8086:8086
+        env:
+          INFLUXDB_DB: metrics
+          INFLUXDB_USER: admin
+          INFLUXDB_USER_PASSWORD: admin123
+    env:
+      INFLUXDB_HOST: localhost
+      INFLUXDB_PORT: 8086
+      INFLUXDB_DB: metrics
+      INFLUXDB_USER: admin
+      INFLUXDB_USER_PASSWORD: admin123
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install poetry
+      - run: poetry install
+      - run: poetry run pytest tests -m "integration and v1" -v
+
+  integration-v2:
+    runs-on: ubuntu-latest
+    needs: [unit-tests]
+    services:
+      influxdb-v2:
+        image: influxdb:2.8
+        ports:
+          - 8086:8086
+        env:
+          DOCKER_INFLUXDB_INIT_MODE: setup
+          DOCKER_INFLUXDB_INIT_USERNAME: admin
+          DOCKER_INFLUXDB_INIT_PASSWORD: admin123
+          DOCKER_INFLUXDB_INIT_ORG: my-org
+          DOCKER_INFLUXDB_INIT_BUCKET: metrics
+          DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: my-super-secret-token
+    env:
+      INFLUXDB_V2_URL: http://localhost:8086
+      INFLUXDB_V2_TOKEN: my-super-secret-token
+      INFLUXDB_V2_ORG: my-org
+      INFLUXDB_V2_BUCKET: metrics
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install poetry
+      - run: poetry install -E v2
+      - run: poetry run pytest tests -m "integration and v2" -v
