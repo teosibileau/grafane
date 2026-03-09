@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "grafane"
-version = "2.0.1"
+version = "2.1.0"
 description = "Opinionated InfluxDB client"
 authors = ["Teofilo Sibileau <teo.sibileau@gmail.com>"]
 readme = "README.md"
@@ -19,12 +19,12 @@ packages = [{include = "grafane"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-influxdb = "5.2.1"
+influxdb-client = "^1.50.0"
 pytz = "*"
-influxdb-client = {version = "^1.50.0", optional = true}
+influxdb = {version = "5.2.1", optional = true}
 
 [tool.poetry.extras]
-v2 = ["influxdb-client"]
+v1 = ["influxdb"]
 
 [tool.poetry.group.dev.dependencies]
 freezegun = "*"
@@ -52,4 +52,5 @@ markers = [
     "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
     "v1: marks tests requiring InfluxDB v1",
     "v2: marks tests requiring InfluxDB v2",
+    "v1v2: marks tests requiring both InfluxDB v1 and v2",
 ]

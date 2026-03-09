@@ -14,12 +14,12 @@ Router behavior:
 import logging
 from typing import TYPE_CHECKING
 
-from influxdb import InfluxDBClient as InfluxDBClientV1
+from influxdb_client import InfluxDBClient as InfluxDBClientV2
 
 from .config import settings
 from .exceptions import (
     DatabaseNotFoundError,
-    InfluxDBV2NotInstalled,
+    InfluxDBV1NotInstalled,
     MetricNotFoundError,
     MultipleConfigError,
 )
@@ -29,21 +29,21 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger("grafane")
 
-# Lazy import for v2 client
-InfluxDBClientV2 = None
+# Lazy import for v1 client
+InfluxDBClientV1 = None
 
 
-def _get_v2_client():
-    """Lazy import and return InfluxDB v2 client class."""
-    global InfluxDBClientV2
-    if InfluxDBClientV2 is None:
+def _get_v1_client():
+    """Lazy import and return InfluxDB v1 client class."""
+    global InfluxDBClientV1
+    if InfluxDBClientV1 is None:
         try:
-            from influxdb_client import InfluxDBClient
+            from influxdb import InfluxDBClient
 
-            InfluxDBClientV2 = InfluxDBClient
+            InfluxDBClientV1 = InfluxDBClient
         except ImportError:
-            raise InfluxDBV2NotInstalled()
-    return InfluxDBClientV2
+            raise InfluxDBV1NotInstalled()
+    return InfluxDBClientV1
 
 
 class Router:
@@ -70,7 +70,8 @@ class Router:
         version = self._get_version(db_config)
 
         if version == 1:
-            return InfluxDBClientV1(
+            v1_client = _get_v1_client()
+            return v1_client(
                 host=db_config["host"],
                 port=db_config["port"],
                 username=db_config["username"],
@@ -79,8 +80,7 @@ class Router:
                 ssl=db_config.get("ssl", False),
             )
         elif version == 2:
-            v2_client = _get_v2_client()
-            return v2_client(
+            return InfluxDBClientV2(
                 url=db_config["url"],
                 token=db_config["token"],
                 org=db_config["org"],

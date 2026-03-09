@@ -20,11 +20,11 @@ UUID = str(uuid_module.UUID(int=uuid_module.getnode())).split("-")[-1]
 # Users can override this in their settings module
 INFLUXDB_SETTINGS = {
     "default": {
-        "host": os.environ.get("INFLUXDB_HOST", "0.0.0.0"),
-        "port": int(os.environ.get("INFLUXDB_PORT", 8086)),
-        "database": os.environ.get("INFLUXDB_DB", "metrics"),
-        "username": os.environ.get("INFLUXDB_USER", "admin"),
-        "password": os.environ.get("INFLUXDB_USER_PASSWORD", "admin123"),
+        "version": 2,
+        "url": os.environ.get("INFLUXDB_V2_URL", "http://localhost:8086"),
+        "token": os.environ.get("INFLUXDB_V2_TOKEN", "my-super-secret-token"),
+        "org": os.environ.get("INFLUXDB_V2_ORG", "my-org"),
+        "bucket": os.environ.get("INFLUXDB_V2_BUCKET", "metrics"),
         "metrics": [],  # Empty list means this is the fallback database
     },
 }

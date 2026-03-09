@@ -35,14 +35,29 @@ class DatabaseNotFoundError(GrafaneError):
     pass
 
 
+class InfluxDBV1NotInstalled(GrafaneError):
+    """Raised when InfluxDB v1 client is required but not installed."""
+
+    def __init__(self, message=None):
+        if message is None:
+            message = (
+                "InfluxDB v1 client requires 'influxdb' package. "
+                "Install with: pip install grafane[v1]"
+            )
+        super().__init__(message)
+
+
 class InfluxDBV2NotInstalled(GrafaneError):
-    """Raised when InfluxDB v2 client is required but not installed."""
+    """Raised when InfluxDB v2 client is required but not installed.
+
+    Deprecated: v2 is now installed by default.
+    """
 
     def __init__(self, message=None):
         if message is None:
             message = (
                 "InfluxDB v2 client requires 'influxdb-client' package. "
-                "Install with: pip install grafane[v2]"
+                "Install with: pip install grafane"
             )
         super().__init__(message)
 

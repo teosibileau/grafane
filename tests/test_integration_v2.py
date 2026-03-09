@@ -103,26 +103,3 @@ class TestGrafaneV2Integration:
         assert len(results) >= 1
 
         c.drop_measurement()
-
-
-@pytest.mark.integration
-@pytest.mark.v2
-class TestGrafaneMixedVersions:
-    """Test mixed v1/v2 database configuration."""
-
-    def test_mixed_database_resolution(self, mixed_v1_v2_settings):
-        """Test that metrics are resolved to correct database versions."""
-        from grafane import Grafane
-
-        c = Grafane("cpu", db="legacy")
-        assert c._version == 1
-
-        c = Grafane("events", db="modern")
-        assert c._version == 2
-
-    def test_fallback_to_v1(self, mixed_v1_v2_settings):
-        """Test that unknown metric falls back to v1 default."""
-        from grafane import Grafane
-
-        c = Grafane("completely_unknown_metric")
-        assert c._version == 1

@@ -7,7 +7,15 @@ A very opinionated InfluxDB client inspired by Grafana's query builder.
 ### Installation
 
 ```bash
-poetry add grafane
+pip install grafane        # InfluxDB v2 (default)
+pip install grafane[v1]    # Add InfluxDB v1 support
+```
+
+Or with poetry:
+
+```bash
+poetry add grafane             # InfluxDB v2 (default)
+poetry add grafane --extras v1 # Add InfluxDB v1 support
 ```
 
 ### Configuration
@@ -20,11 +28,11 @@ Grafane supports multi-database setups with a Django-style configuration system.
 # myproject/settings.py
 INFLUXDB_SETTINGS = {
     'default': {
-        'host': 'localhost',
-        'port': 8086,
-        'database': 'metrics',
-        'username': 'admin',
-        'password': 'secret',
+        'version': 2,
+        'url': 'http://localhost:8086',
+        'token': 'my-api-token',
+        'org': 'my-org',
+        'bucket': 'my-bucket',
         'metrics': [],
     },
 }
@@ -45,15 +53,14 @@ export GRAFANE_SETTINGS_MODULE=myproject.settings
 
 ### Environment Variables (Default Configuration)
 
-If no settings module is configured, Grafane uses these environment variables for a single default database:
+If no settings module is configured, Grafane uses these environment variables for a single default InfluxDB v2 database:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `INFLUXDB_HOST` | `0.0.0.0` | InfluxDB host |
-| `INFLUXDB_PORT` | `8086` | InfluxDB port |
-| `INFLUXDB_DB` | `metrics` | Database name |
-| `INFLUXDB_USER` | `admin` | Username |
-| `INFLUXDB_USER_PASSWORD` | `admin123` | Password |
+| `INFLUXDB_V2_URL` | `http://localhost:8086` | InfluxDB v2 URL |
+| `INFLUXDB_V2_TOKEN` | `my-super-secret-token` | API token |
+| `INFLUXDB_V2_ORG` | `my-org` | Organization |
+| `INFLUXDB_V2_BUCKET` | `metrics` | Bucket name |
 | `TESTING` | `0` | If set, appends `-testing` to metric names |
 
 For multi-database setups, use a settings module instead (see Configuration above).
@@ -78,62 +85,7 @@ results = c.select(fields='value').filter_by('room', '=', 'living').execute_quer
 
 ## Multi-Database Setup
 
-Configure multiple InfluxDB databases in your settings module:
-
-```python
-# myproject/settings.py
-INFLUXDB_SETTINGS = {
-    'default': {
-        'host': 'localhost',
-        'port': 8086,
-        'database': 'metrics',
-        'username': 'admin',
-        'password': 'secret',
-        'metrics': [],  # Empty = fallback for unmatched metrics
-    },
-    'analytics': {
-        'host': 'analytics.example.com',
-        'port': 8086,
-        'database': 'analytics',
-        'username': 'analytics_user',
-        'password': 'analytics_pass',
-        'metrics': ['page_views', 'sessions', 'events'],
-    },
-    'monitoring': {
-        'host': 'monitoring.example.com',
-        'port': 8086,
-        'database': 'monitoring',
-        'username': 'monitoring_user',
-        'password': 'monitoring_pass',
-        'metrics': ['cpu', 'memory', 'disk'],
-    },
-}
-```
-
-### Database Configuration Keys
-
-| Key | Type | Required | Description |
-|-----|------|----------|-------------|
-| `host` | str | Yes | InfluxDB host |
-| `port` | int | Yes | InfluxDB port |
-| `database` | str | Yes | Database name |
-| `username` | str | Yes | Username |
-| `password` | str | Yes | Password |
-| `metrics` | list | No | Metrics routed to this database (empty = fallback) |
-
-### InfluxDB v2 Support
-
-> **Note:** Python 3.9 and 3.10 support were dropped to prepare for the InfluxDB v2 client. Grafane 1.0.0 still supports Python 3.9+.
-
-Grafane supports InfluxDB v2 with the same API. Install the v2 client:
-
-```bash
-pip install grafane[v2]
-# or
-poetry add grafane --extras v2
-```
-
-Configure v2 databases in your settings module:
+Configure multiple InfluxDB buckets in your settings module:
 
 ```python
 # myproject/settings.py
@@ -143,13 +95,21 @@ INFLUXDB_SETTINGS = {
         'url': 'http://localhost:8086',
         'token': 'my-api-token',
         'org': 'my-org',
-        'bucket': 'my-bucket',
-        'metrics': [],
+        'bucket': 'metrics',
+        'metrics': [],  # Empty = fallback for unmatched metrics
+    },
+    'analytics': {
+        'version': 2,
+        'url': 'http://analytics.example.com:8086',
+        'token': 'analytics-token',
+        'org': 'my-org',
+        'bucket': 'analytics',
+        'metrics': ['page_views', 'sessions', 'events'],
     },
 }
 ```
 
-**v2 Configuration Keys:**
+### v2 Configuration Keys
 
 | Key | Type | Required | Description |
 |-----|------|----------|-------------|
@@ -160,9 +120,37 @@ INFLUXDB_SETTINGS = {
 | `bucket` | str | Yes | Bucket name |
 | `metrics` | list | No | Metrics routed to this bucket (empty = fallback) |
 
-**Mixed v1/v2 Setup:**
+### Legacy InfluxDB v1 Support
 
-You can configure both v1 and v2 databases in the same settings:
+> **Note:** InfluxDB v1 requires the `v1` extra: `pip install grafane[v1]`
+
+```python
+INFLUXDB_SETTINGS = {
+    'default': {
+        'host': 'localhost',
+        'port': 8086,
+        'database': 'metrics',
+        'username': 'admin',
+        'password': 'secret',
+        'metrics': [],
+    },
+}
+```
+
+**v1 Configuration Keys:**
+
+| Key | Type | Required | Description |
+|-----|------|----------|-------------|
+| `host` | str | Yes | InfluxDB host |
+| `port` | int | Yes | InfluxDB port |
+| `database` | str | Yes | Database name |
+| `username` | str | Yes | Username |
+| `password` | str | Yes | Password |
+| `metrics` | list | No | Metrics routed to this database (empty = fallback) |
+
+### Mixed v1/v2 Setup
+
+You can configure both v1 and v2 databases in the same settings (requires `pip install grafane[v1]`):
 
 ```python
 INFLUXDB_SETTINGS = {
