@@ -5,6 +5,7 @@ import pytest
 from grafane.exceptions import (
     DatabaseNotFoundError,
     GrafaneError,
+    InfluxDBV1NotInstalled,
     InfluxDBV2NotInstalled,
     MetricNotFoundError,
     MissingInfluxDBSettings,
@@ -124,6 +125,31 @@ class TestDatabaseNotFoundError:
             raise DatabaseNotFoundError("test")
 
 
+class TestInfluxDBV1NotInstalled:
+    """Tests for InfluxDBV1NotInstalled exception."""
+
+    def test_inherits_from_grafane_error(self):
+        """InfluxDBV1NotInstalled should inherit from GrafaneError."""
+        assert issubclass(InfluxDBV1NotInstalled, GrafaneError)
+
+    def test_default_message(self):
+        """Default message should mention pip install grafane[v1]."""
+        with pytest.raises(InfluxDBV1NotInstalled) as exc_info:
+            raise InfluxDBV1NotInstalled()
+        assert "pip install grafane[v1]" in str(exc_info.value)
+
+    def test_custom_message(self):
+        """Can provide custom message."""
+        with pytest.raises(InfluxDBV1NotInstalled) as exc_info:
+            raise InfluxDBV1NotInstalled("custom error message")
+        assert str(exc_info.value) == "custom error message"
+
+    def test_catchable_as_grafane_error(self):
+        """InfluxDBV1NotInstalled can be caught as GrafaneError."""
+        with pytest.raises(GrafaneError):
+            raise InfluxDBV1NotInstalled()
+
+
 class TestInfluxDBV2NotInstalled:
     """Tests for InfluxDBV2NotInstalled exception."""
 
@@ -132,10 +158,10 @@ class TestInfluxDBV2NotInstalled:
         assert issubclass(InfluxDBV2NotInstalled, GrafaneError)
 
     def test_default_message(self):
-        """Default message should mention pip install grafane[v2]."""
+        """Default message should mention pip install grafane."""
         with pytest.raises(InfluxDBV2NotInstalled) as exc_info:
             raise InfluxDBV2NotInstalled()
-        assert "pip install grafane[v2]" in str(exc_info.value)
+        assert "pip install grafane" in str(exc_info.value)
 
     def test_custom_message(self):
         """Can provide custom message."""
@@ -186,6 +212,7 @@ class TestExceptionHierarchy:
             MetricNotFoundError,
             MultipleConfigError,
             DatabaseNotFoundError,
+            InfluxDBV1NotInstalled,
             InfluxDBV2NotInstalled,
             UnsupportedOperationError,
         ]
@@ -201,6 +228,7 @@ class TestExceptionHierarchy:
             MetricNotFoundError("test"),
             MultipleConfigError("test"),
             DatabaseNotFoundError("test"),
+            InfluxDBV1NotInstalled("test"),
             InfluxDBV2NotInstalled("test"),
             UnsupportedOperationError("test"),
         ]

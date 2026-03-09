@@ -8,10 +8,7 @@ import functools
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-try:
-    from influxdb_client.client.write_api import SYNCHRONOUS
-except ImportError:
-    SYNCHRONOUS = None
+from influxdb_client.client.write_api import SYNCHRONOUS
 import pytz
 
 from .config import settings

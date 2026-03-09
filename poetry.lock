@@ -437,6 +437,7 @@ files = [
     {file = "charset_normalizer-3.4.5-py3-none-any.whl", hash = "sha256:9db5e3fcdcee89a78c04dffb3fe33c79f77bd741a624946db2591c81b2fc85b0"},
     {file = "charset_normalizer-3.4.5.tar.gz", hash = "sha256:95adae7b6c42a6c5b5b559b1a99149f090a57128155daeea91732c8d970d8644"},
 ]
+markers = {main = "extra == \"v1\""}
 
 [[package]]
 name = "colorama"
@@ -788,6 +789,7 @@ files = [
     {file = "idna-3.11-py3-none-any.whl", hash = "sha256:771a87f49d9defaf64091e6e6fe9c18d4833f140bd19464795bc32d966ca37ea"},
     {file = "idna-3.11.tar.gz", hash = "sha256:795dafcc9c04ed0c1fb032c2aa73654d8e8c5023a7df64a53f39190ada629902"},
 ]
+markers = {main = "extra == \"v1\""}
 
 [package.extras]
 all = ["flake8 (>=7.1.1)", "mypy (>=1.11.2)", "pytest (>=8.3.2)", "ruff (>=0.6.2)"]
@@ -796,9 +798,10 @@ all = ["flake8 (>=7.1.1)", "mypy (>=1.11.2)", "pytest (>=8.3.2)", "ruff (>=0.6.2
 name = "influxdb"
 version = "5.2.1"
 description = "InfluxDB client"
-optional = false
+optional = true
 python-versions = "*"
 groups = ["main"]
+markers = "extra == \"v1\""
 files = [
     {file = "influxdb-5.2.1-py2.py3-none-any.whl", hash = "sha256:661d6b8878bec20fb1a20ae794e1b35875b3ebf5f1ba7eaa6cb5a9901a9fdc7f"},
     {file = "influxdb-5.2.1.tar.gz", hash = "sha256:75d96de25d0d4e9e66e155f64dc9dc2a48de74ac4e77e3a46ad881fba772e3b6"},
@@ -817,10 +820,9 @@ test = ["mock", "nose", "nose-cov", "requests-mock"]
 name = "influxdb-client"
 version = "1.50.0"
 description = "InfluxDB 2.0 Python client library"
-optional = true
+optional = false
 python-versions = ">=3.7"
 groups = ["main"]
-markers = "extra == \"v2\""
 files = [
     {file = "influxdb_client-1.50.0-py3-none-any.whl", hash = "sha256:f172975cf7f0c95bfe74f288b31273393b164d2c58a948de55497d9956ab49be"},
     {file = "influxdb_client-1.50.0.tar.gz", hash = "sha256:c2a4906573097103fa6f9a2ab08efe2eb48c2fed60b8129a3e320affde445743"},
@@ -2357,10 +2359,9 @@ cffi = {version = "*", markers = "implementation_name == \"pypy\""}
 name = "reactivex"
 version = "4.1.0"
 description = "ReactiveX (Rx) for Python"
-optional = true
+optional = false
 python-versions = "<4.0,>=3.8"
 groups = ["main"]
-markers = "extra == \"v2\""
 files = [
     {file = "reactivex-4.1.0-py3-none-any.whl", hash = "sha256:485750ec8d9b34bcc8ff4318971d234dc4f595058a1b4435a74aefef4b2bc9bd"},
     {file = "reactivex-4.1.0.tar.gz", hash = "sha256:c7499e3c802bccaa20839b3e17355a7d939573fded3f38ba3d4796278a169a3d"},
@@ -2397,6 +2398,7 @@ files = [
     {file = "requests-2.32.5-py3-none-any.whl", hash = "sha256:2462f94637a34fd532264295e186976db0f5d453d1cdd31473c85a6a161affb6"},
     {file = "requests-2.32.5.tar.gz", hash = "sha256:dbba0bac56e100853db0ea71b82b4dfd5fe2bf6d3754a8893c3af500cec7d7cf"},
 ]
+markers = {main = "extra == \"v1\""}
 
 [package.dependencies]
 certifi = ">=2017.4.17"
@@ -2749,7 +2751,7 @@ files = [
     {file = "typing_extensions-4.15.0-py3-none-any.whl", hash = "sha256:f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548"},
     {file = "typing_extensions-4.15.0.tar.gz", hash = "sha256:0cea48d173cc12fa28ecabc3b837ea3cf6f38c6d1136f85cbaaf598984861466"},
 ]
-markers = {main = "extra == \"v2\"", dev = "python_version == \"3.11\""}
+markers = {dev = "python_version == \"3.11\""}
 
 [[package]]
 name = "tzdata"
@@ -2951,9 +2953,9 @@ nospam = ["requests_cache (>=1.0)", "requests_ratelimiter (>=0.3.1)"]
 repair = ["scipy (>=1.6.3)"]
 
 [extras]
-v2 = ["influxdb-client"]
+v1 = ["influxdb"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "88763ddbd7ffcada9551b88556085dfc3e780c39f620e98f5b7b631b4d29be4a"
+content-hash = "a7286faa3de51d582b062c2d37f53f8a15ed2bbe2fdfdc205e788a0ac3b5fb48"

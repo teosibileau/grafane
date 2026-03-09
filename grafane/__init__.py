@@ -3,6 +3,7 @@ from .config import configure, settings  # noqa
 from .exceptions import (  # noqa
     DatabaseNotFoundError,
     GrafaneError,
+    InfluxDBV1NotInstalled,
     InfluxDBV2NotInstalled,
     MetricNotFoundError,
     MissingInfluxDBSettings,

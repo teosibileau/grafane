@@ -189,6 +189,54 @@ def pytest_configure(config):
 
 
 @pytest.fixture
+def v1_settings(tmp_path):
+    """Create settings for InfluxDB v1.
+
+    Uses environment variables from .env file:
+    - INFLUXDB_HOST (default: localhost)
+    - INFLUXDB_PORT (default: 8086)
+    - INFLUXDB_DB (default: metrics)
+    - INFLUXDB_USER (default: admin)
+    - INFLUXDB_USER_PASSWORD (default: admin123)
+
+    Requires: docker-compose up metrics
+    """
+    module_dir = tmp_path / "v1_settings_pkg"
+    module_dir.mkdir()
+    (module_dir / "__init__.py").write_text("")
+
+    v1_host = os.environ.get("INFLUXDB_HOST", "localhost")
+    v1_port = os.environ.get("INFLUXDB_PORT", "8086")
+    v1_db = os.environ.get("INFLUXDB_DB", "metrics")
+    v1_user = os.environ.get("INFLUXDB_USER", "admin")
+    v1_pass = os.environ.get("INFLUXDB_USER_PASSWORD", "admin123")
+
+    settings_content = f"""
+INFLUXDB_SETTINGS = {{
+    'default': {{
+        'version': 1,
+        'host': '{v1_host}',
+        'port': {v1_port},
+        'database': '{v1_db}',
+        'username': '{v1_user}',
+        'password': '{v1_pass}',
+        'metrics': [],
+    }},
+}}
+"""
+    (module_dir / "settings.py").write_text(settings_content)
+
+    sys.path.insert(0, str(tmp_path))
+    try:
+        settings.configure("v1_settings_pkg.settings")
+        yield settings
+    finally:
+        sys.path.remove(str(tmp_path))
+        settings.reset()
+        router.clear_cache()
+
+
+@pytest.fixture
 def v2_settings(tmp_path):
     """Create settings for InfluxDB v2 using metrics-v2 compose service.
 
@@ -277,12 +325,11 @@ INFLUXDB_SETTINGS = {{
         'metrics': ['events', 'traces'],
     }},
     'default': {{
-        'version': 1,
-        'host': '{v1_host}',
-        'port': {v1_port},
-        'database': '{v1_db}',
-        'username': '{v1_user}',
-        'password': '{v1_pass}',
+        'version': 2,
+        'url': '{v2_url}',
+        'token': '{v2_token}',
+        'org': '{v2_org}',
+        'bucket': '{v2_bucket}',
         'metrics': [],
     }},
 }}

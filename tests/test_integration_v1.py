@@ -15,7 +15,7 @@ from grafane import Grafane, WrongArgumentType
 
 
 @pytest.fixture
-def client(configured_settings):
+def client(v1_settings):
     """Real Grafane client for v1 integration tests."""
     metric_name = f"test_{datetime.now().strftime('%s')}"
     c = Grafane(metric_name)
@@ -178,9 +178,9 @@ class TestGrafaneClientProperties:
         """database_name property returns the configured database."""
         assert client.database_name == "default"
 
-    def test_uuid_from_settings(self, client, configured_settings):
+    def test_uuid_from_settings(self, client, v1_settings):
         """UUID is loaded from settings."""
-        assert client.uuid == configured_settings.UUID
+        assert client.uuid == v1_settings.UUID
 
 
 @pytest.mark.integration

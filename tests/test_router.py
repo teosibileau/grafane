@@ -116,9 +116,9 @@ class TestRouterGetClient:
     """Tests for Router.get_client method."""
 
     def test_get_client_creates_client(self, configured_settings):
-        """get_client creates an InfluxDBClientV1."""
+        """get_client creates an InfluxDBClientV2."""
         r = Router()
-        with patch("grafane.router.InfluxDBClientV1") as mock_client:
+        with patch("grafane.router.InfluxDBClientV2") as mock_client:
             mock_instance = MagicMock()
             mock_client.return_value = mock_instance
 
@@ -130,7 +130,7 @@ class TestRouterGetClient:
     def test_get_client_caches_client(self, configured_settings):
         """get_client caches and reuses clients."""
         r = Router()
-        with patch("grafane.router.InfluxDBClientV1") as mock_client:
+        with patch("grafane.router.InfluxDBClientV2") as mock_client:
             mock_instance = MagicMock()
             mock_client.return_value = mock_instance
 
@@ -153,7 +153,7 @@ class TestRouterGetClientForMetric:
     def test_get_client_for_metric_returns_tuple(self, configured_settings):
         """get_client_for_metric returns (client, db_name) tuple."""
         r = Router()
-        with patch("grafane.router.InfluxDBClientV1") as mock_client:
+        with patch("grafane.router.InfluxDBClientV2") as mock_client:
             mock_instance = MagicMock()
             mock_client.return_value = mock_instance
 
@@ -199,6 +199,31 @@ class TestRouterCacheManagement:
 
             r.get_client("default")
             assert r.cached_databases == ["default"]
+
+
+@pytest.mark.v1v2
+class TestMixedVersionRouting:
+    """Tests for mixed v1/v2 database routing.
+
+    Requires both v1 and v2 packages: pip install grafane[v1]
+    """
+
+    def test_mixed_database_resolution(self, mixed_v1_v2_settings):
+        """Test that metrics are resolved to correct database versions."""
+        from grafane import Grafane
+
+        c = Grafane("cpu", db="legacy")
+        assert c._version == 1
+
+        c = Grafane("events", db="modern")
+        assert c._version == 2
+
+    def test_fallback_to_v2(self, mixed_v1_v2_settings):
+        """Test that unknown metric falls back to v2 default."""
+        from grafane import Grafane
+
+        c = Grafane("completely_unknown_metric")
+        assert c._version == 2
 
 
 class TestGlobalRouter:
